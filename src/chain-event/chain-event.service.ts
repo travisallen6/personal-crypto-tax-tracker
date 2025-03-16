@@ -1,26 +1,46 @@
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { CreateChainEventDto } from './dto/create-chain-event.dto';
 import { UpdateChainEventDto } from './dto/update-chain-event.dto';
-
+import { ChainEvent } from './entities/chain-event.entity';
 @Injectable()
 export class ChainEventService {
+  constructor(
+    @InjectRepository(ChainEvent)
+    private chainEventRepository: Repository<ChainEvent>,
+  ) {}
+
   create(createChainEventDto: CreateChainEventDto) {
-    return 'This action adds a new chainEvent';
+    return this.chainEventRepository.save(createChainEventDto);
+  }
+
+  createMany(createChainEventDto: CreateChainEventDto[]) {
+    return this.chainEventRepository.insert(createChainEventDto);
   }
 
   findAll() {
-    return `This action returns all chainEvent`;
+    return this.chainEventRepository.find();
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} chainEvent`;
+    return this.chainEventRepository.findOne({ where: { id } });
   }
 
   update(id: number, updateChainEventDto: UpdateChainEventDto) {
-    return `This action updates a #${id} chainEvent`;
+    return this.chainEventRepository.update(id, updateChainEventDto);
   }
 
   remove(id: number) {
-    return `This action removes a #${id} chainEvent`;
+    return this.chainEventRepository.delete(id);
+  }
+
+  async findLatestChainEventBlockNumber(): Promise<number> {
+    const chainEvent = await this.chainEventRepository.findOne({
+      where: {},
+      order: { blockNumber: 'DESC' },
+    });
+
+    return chainEvent?.blockNumber || 0;
   }
 }
