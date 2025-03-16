@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ChainEventModule } from './chain-event/chain-event.module';
 import { ChainEvent } from './chain-event/entities/chain-event.entity';
 import config, { DBConfig } from './config/config';
+import { LoggerModule } from './logger/logger.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import config, { DBConfig } from './config/config';
       load: [config],
       isGlobal: true,
     }),
+    LoggerModule,
     ChainEventModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
