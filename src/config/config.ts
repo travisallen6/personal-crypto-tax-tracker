@@ -40,7 +40,7 @@ class Config {
 
   public readonly db: DBConfig = {
     host: this.readEnvVariable('DB_HOST', { required: true }),
-    port: parseInt(this.readEnvVariable('DB_PORT', { required: true })),
+    port: parseInt(this.readEnvVariable('DB_PORT', { required: true }), 10),
     username: this.readEnvVariable('DB_USERNAME', { required: true }),
     password: this.readEnvVariable('DB_PASSWORD', { required: true }),
     name: this.readEnvVariable('DB_NAME', { required: true }),
