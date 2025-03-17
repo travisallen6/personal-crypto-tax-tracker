@@ -29,6 +29,7 @@ export type ChainEventDB = Omit<
   | 'transactionIndex'
   | 'gas'
   | 'confirmations'
+  | 'hash'
 > & {
   timeStamp: Date;
   blockNumber: number;
@@ -37,4 +38,6 @@ export type ChainEventDB = Omit<
   transactionIndex: number;
   gas: number;
   confirmations: number;
+  transactionHash: string;
+  chainEventUniqueId: string;
 };

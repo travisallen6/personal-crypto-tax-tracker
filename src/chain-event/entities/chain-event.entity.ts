@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 import { ChainEventDB } from '../types/chain-event';
 
 @Entity()
@@ -13,7 +13,7 @@ export class ChainEvent implements ChainEventDB {
   timeStamp: Date;
 
   @Column({ type: 'varchar', length: 66, nullable: false })
-  hash: string;
+  transactionHash: string;
 
   @Column({ type: 'bigint', nullable: false })
   nonce: number;
@@ -59,4 +59,8 @@ export class ChainEvent implements ChainEventDB {
 
   @Column({ type: 'bigint', nullable: false })
   confirmations: number;
+
+  @Column({ type: 'varchar', length: 100, nullable: false })
+  @Index({ unique: true })
+  chainEventUniqueId: string;
 }
