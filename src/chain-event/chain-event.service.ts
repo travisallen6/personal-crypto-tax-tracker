@@ -11,12 +11,18 @@ export class ChainEventService {
     private chainEventRepository: Repository<ChainEvent>,
   ) {}
 
-  create(createChainEventDto: CreateChainEventDto) {
-    return this.chainEventRepository.save(createChainEventDto);
+  async create(createChainEventDto: CreateChainEventDto) {
+    return this.createMany([createChainEventDto]);
   }
 
-  createMany(createChainEventDto: CreateChainEventDto[]) {
-    return this.chainEventRepository.insert(createChainEventDto);
+  createMany(createChainEventDtos: CreateChainEventDto[]) {
+    return this.chainEventRepository.manager
+      .createQueryBuilder()
+      .insert()
+      .into(ChainEvent)
+      .values(createChainEventDtos)
+      .orIgnore()
+      .execute();
   }
 
   findAll() {
