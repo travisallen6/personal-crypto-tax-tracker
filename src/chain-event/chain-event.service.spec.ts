@@ -1,12 +1,30 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { ChainEventService } from './chain-event.service';
 import { ChainEvent } from './entities/chain-event.entity';
 import { CreateChainEventDto } from './dto/create-chain-event.dto';
 import { UpdateChainEventDto } from './dto/update-chain-event.dto';
 
-type MockRepository = Partial<Record<keyof Repository<any>, jest.Mock>>;
+type QueryBuilderMock = {
+  insert: jest.MockedFunction<() => QueryBuilderMock>;
+  into: jest.MockedFunction<() => QueryBuilderMock>;
+  values: jest.MockedFunction<() => QueryBuilderMock>;
+  orIgnore: jest.MockedFunction<() => QueryBuilderMock>;
+  execute: jest.MockedFunction<() => Promise<{ raw: any[]; affected: number }>>;
+};
+
+type MockRepository = {
+  save: jest.MockedFunction<(data: any) => any>;
+  insert: jest.MockedFunction<(data: any) => any>;
+  find: jest.MockedFunction<() => any>;
+  findOne: jest.MockedFunction<(options: any) => any>;
+  update: jest.MockedFunction<(id: number, data: any) => any>;
+  delete: jest.MockedFunction<(id: number) => any>;
+  manager: {
+    createQueryBuilder: jest.MockedFunction<() => QueryBuilderMock>;
+  };
+};
+
 const createMockRepository = (): MockRepository => ({
   save: jest.fn(),
   insert: jest.fn(),
@@ -14,6 +32,15 @@ const createMockRepository = (): MockRepository => ({
   findOne: jest.fn(),
   update: jest.fn(),
   delete: jest.fn(),
+  manager: {
+    createQueryBuilder: jest.fn().mockReturnValue({
+      insert: jest.fn().mockReturnThis(),
+      into: jest.fn().mockReturnThis(),
+      values: jest.fn().mockReturnThis(),
+      orIgnore: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ raw: [], affected: 0 }),
+    }),
+  },
 });
 
 describe('ChainEventService', () => {
@@ -22,7 +49,7 @@ describe('ChainEventService', () => {
 
   beforeEach(async () => {
     repository = createMockRepository();
-    const module: TestingModule = await Test.createTestingModule({
+    const testModule: TestingModule = await Test.createTestingModule({
       providers: [
         ChainEventService,
         {
@@ -32,7 +59,7 @@ describe('ChainEventService', () => {
       ],
     }).compile();
 
-    service = module.get<ChainEventService>(ChainEventService);
+    service = testModule.get<ChainEventService>(ChainEventService);
   });
 
   it('should be defined', () => {
@@ -44,7 +71,7 @@ describe('ChainEventService', () => {
       const createDto: CreateChainEventDto = {
         blockNumber: 12345678,
         timeStamp: new Date(),
-        hash: '0x1234567890abcdef',
+        transactionHash: '0x1234567890abcdef',
         nonce: 123,
         blockHash: '0xabcdef1234567890',
         from: '0x1234567890abcdef1234567890abcdef12345678',
@@ -60,14 +87,25 @@ describe('ChainEventService', () => {
         gasUsed: '21000',
         cumulativeGasUsed: '21000',
         confirmations: 10,
+        chainEventUniqueId: 'uniqueId123',
       };
-      const expectedResult = { id: 1, ...createDto };
 
-      repository.save!.mockReturnValue(expectedResult);
+      const expectedResult = { raw: [], affected: 1 };
+
+      // Reset the mock to ensure clean state
+      repository.manager.createQueryBuilder = jest.fn().mockReturnValue({
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockReturnThis(),
+        orIgnore: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue(expectedResult),
+      });
 
       const result = await service.create(createDto);
 
-      expect(repository.save).toHaveBeenCalledWith(createDto);
+      // Verify the query builder was called correctly
+      const queryBuilder = repository.manager.createQueryBuilder();
+      expect(queryBuilder.values).toHaveBeenCalledWith([createDto]);
       expect(result).toEqual(expectedResult);
     });
   });
@@ -78,7 +116,7 @@ describe('ChainEventService', () => {
         {
           blockNumber: 12345678,
           timeStamp: new Date(),
-          hash: '0x1234567890abcdef1',
+          transactionHash: '0x1234567890abcdef1',
           nonce: 123,
           blockHash: '0xabcdef1234567890',
           from: '0x1234567890abcdef1234567890abcdef12345678',
@@ -94,11 +132,12 @@ describe('ChainEventService', () => {
           gasUsed: '21000',
           cumulativeGasUsed: '21000',
           confirmations: 10,
+          chainEventUniqueId: 'uniqueId123',
         },
         {
           blockNumber: 12345679,
           timeStamp: new Date(),
-          hash: '0x1234567890abcdef2',
+          transactionHash: '0x1234567890abcdef2',
           nonce: 124,
           blockHash: '0xabcdef1234567891',
           from: '0x1234567890abcdef1234567890abcdef12345678',
@@ -114,15 +153,26 @@ describe('ChainEventService', () => {
           gasUsed: '21000',
           cumulativeGasUsed: '42000',
           confirmations: 9,
+          chainEventUniqueId: 'uniqueId456',
         },
       ];
 
-      const expectedResult = { identifiers: [{ id: 1 }, { id: 2 }] };
-      repository.insert!.mockReturnValue(expectedResult);
+      const expectedResult = { raw: [], affected: 2 };
+
+      // Reset the mock to ensure clean state
+      repository.manager.createQueryBuilder = jest.fn().mockReturnValue({
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockReturnThis(),
+        orIgnore: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue(expectedResult),
+      });
 
       const result = await service.createMany(createDtos);
 
-      expect(repository.insert).toHaveBeenCalledWith(createDtos);
+      // Verify the query builder was called correctly
+      const queryBuilder = repository.manager.createQueryBuilder();
+      expect(queryBuilder.values).toHaveBeenCalledWith(createDtos);
       expect(result).toEqual(expectedResult);
     });
   });
@@ -134,17 +184,19 @@ describe('ChainEventService', () => {
           id: 1,
           blockNumber: 12345678,
           timeStamp: new Date(),
-          hash: '0x1234567890abcdef',
+          transactionHash: '0x1234567890abcdef',
+          chainEventUniqueId: 'uniqueId123',
         },
         {
           id: 2,
           blockNumber: 12345679,
           timeStamp: new Date(),
-          hash: '0x1234567890abcdef2',
+          transactionHash: '0x1234567890abcdef2',
+          chainEventUniqueId: 'uniqueId456',
         },
       ];
 
-      repository.find!.mockReturnValue(expectedResult);
+      repository.find.mockReturnValue(expectedResult);
 
       const result = await service.findAll();
 
@@ -160,10 +212,11 @@ describe('ChainEventService', () => {
         id,
         blockNumber: 12345678,
         timeStamp: new Date(),
-        hash: '0x1234567890abcdef',
+        transactionHash: '0x1234567890abcdef',
+        chainEventUniqueId: 'uniqueId123',
       };
 
-      repository.findOne!.mockReturnValue(expectedResult);
+      repository.findOne.mockReturnValue(expectedResult);
 
       const result = await service.findOne(id);
 
@@ -180,7 +233,7 @@ describe('ChainEventService', () => {
       };
       const expectedResult = { affected: 1 };
 
-      repository.update!.mockReturnValue(expectedResult);
+      repository.update.mockReturnValue(expectedResult);
 
       const result = await service.update(id, updateDto);
 
@@ -194,7 +247,7 @@ describe('ChainEventService', () => {
       const id = 1;
       const expectedResult = { affected: 1 };
 
-      repository.delete!.mockReturnValue(expectedResult);
+      repository.delete.mockReturnValue(expectedResult);
 
       const result = await service.remove(id);
 
@@ -210,7 +263,7 @@ describe('ChainEventService', () => {
         blockNumber: 12345678,
       };
 
-      repository.findOne!.mockReturnValue(chainEvent);
+      repository.findOne.mockReturnValue(chainEvent);
 
       const result = await service.findLatestChainEventBlockNumber();
 
@@ -222,7 +275,7 @@ describe('ChainEventService', () => {
     });
 
     it('should return 0 if no chain events exist', async () => {
-      repository.findOne!.mockReturnValue(null);
+      repository.findOne.mockReturnValue(null);
 
       const result = await service.findLatestChainEventBlockNumber();
 

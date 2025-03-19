@@ -3,9 +3,12 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
+import stringify from 'json-stringify-deterministic';
+import crypto from 'crypto';
 import { ChainEventService } from './chain-event.service';
 import { EtherscanService } from './etherscan.service';
 import { ChainEventDB, ChainEventTransaction } from './types/chain-event';
+
 @Injectable()
 export class ChainEventSyncService {
   private readonly logger = new Logger(ChainEventSyncService.name);
@@ -23,12 +26,19 @@ export class ChainEventSyncService {
     );
   }
 
+  private calculateChainEventUniqueId(transaction: ChainEventTransaction) {
+    const stringified = stringify(transaction);
+
+    return crypto.createHash('sha1').update(stringified).digest('hex');
+  }
+
   private convertChainEventTransactionsToChainEventDBs(
     transactions: ChainEventTransaction[],
   ): ChainEventDB[] {
     return transactions.map((transaction) => {
       return {
         ...transaction,
+        transactionHash: transaction.hash,
         timeStamp: new Date(+transaction.timeStamp * 1000),
         blockNumber: +transaction.blockNumber,
         nonce: +transaction.nonce,
@@ -36,6 +46,7 @@ export class ChainEventSyncService {
         transactionIndex: +transaction.transactionIndex,
         gas: +transaction.gas,
         confirmations: +transaction.confirmations,
+        chainEventUniqueId: this.calculateChainEventUniqueId(transaction),
       };
     });
   }
