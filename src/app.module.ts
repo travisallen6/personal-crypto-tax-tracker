@@ -5,6 +5,7 @@ import { ChainEventModule } from './chain-event/chain-event.module';
 import { ChainEvent } from './chain-event/entities/chain-event.entity';
 import config, { DBConfig } from './config/config';
 import { LoggerModule } from './logger/logger.module';
+import { ExchangeEventModule } from './exchange-event/exchange-event.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { LoggerModule } from './logger/logger.module';
     }),
     LoggerModule,
     ChainEventModule,
+    ExchangeEventModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

@@ -17,6 +17,12 @@ export interface EtherscanConfig {
   baseUrl: string;
 }
 
+export interface KrakenConfig {
+  apiKey: string;
+  apiSecret: string;
+  baseUrl: string;
+}
+
 class Config {
   private defaultReadEnvOptions: ReadEnvVariableOptions = {
     required: false,
@@ -50,6 +56,15 @@ class Config {
   public readonly etherscan: EtherscanConfig = {
     apiKey: this.readEnvVariable('ETHERSCAN_API_KEY', { required: true }),
     baseUrl: this.readEnvVariable('ETHERSCAN_BASE_URL', { required: true }),
+  };
+
+  public readonly kraken: KrakenConfig = {
+    apiKey: this.readEnvVariable('KRAKEN_API_KEY', { required: true }),
+    apiSecret: this.readEnvVariable('KRAKEN_API_SECRET', { required: true }),
+    baseUrl: this.readEnvVariable('KRAKEN_BASE_URL', {
+      required: true,
+      default: 'https://api.kraken.com',
+    }),
   };
 }
 
