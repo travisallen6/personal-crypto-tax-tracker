@@ -39,6 +39,10 @@ class Config {
       throw new Error(`Environment variable ${key} is required but not set`);
     }
 
+    if (opts.default && !value) {
+      return opts.default;
+    }
+
     return value;
   }
 
