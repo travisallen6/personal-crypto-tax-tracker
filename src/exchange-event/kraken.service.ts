@@ -5,10 +5,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as crypto from 'crypto';
 import * as querystring from 'querystring';
 import { PaginatedExchangeResponse } from './types/exchange-event';
-import {
-  KrakenTradeTransaction,
-  KrakenTradeTransactionRaw,
-} from './types/exchange-transaction';
+import { KrakenTradeTransactionRaw } from './types/exchange-transaction';
+import { ExchangeEvent } from './types/exchange-event';
 
 interface KrakenResponse<T> {
   error: string[];
@@ -105,7 +103,7 @@ export class KrakenService {
    */
   private convertTradeTransactionRawToTradeTransaction(
     rawTradeDictionary: Record<string, KrakenTradeTransactionRaw>,
-  ): KrakenTradeTransaction[] {
+  ): ExchangeEvent[] {
     return Object.entries(rawTradeDictionary).map(([txid, rawTrade]) => ({
       ...rawTrade,
       txid,
@@ -152,7 +150,7 @@ export class KrakenService {
     start?: number,
     end?: number,
     offset?: number,
-  ): Promise<PaginatedExchangeResponse<KrakenTradeTransaction[]>> {
+  ): Promise<PaginatedExchangeResponse<ExchangeEvent[]>> {
     const params: Record<string, any> = {};
 
     if (start) {
@@ -193,7 +191,7 @@ export class KrakenService {
   public async getSellTrades(
     start?: number,
     end?: number,
-  ): Promise<PaginatedExchangeResponse<KrakenTradeTransaction[]>> {
+  ): Promise<PaginatedExchangeResponse<ExchangeEvent[]>> {
     const allTrades = await this.getClosedTrades(start, end);
 
     // Filter to only include sell trades

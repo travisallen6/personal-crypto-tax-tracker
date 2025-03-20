@@ -26,21 +26,6 @@ export interface KrakenTradeTransactionRaw {
   trades?: string[];
 }
 
-export interface KrakenTradeTransaction
-  extends Omit<
-    KrakenTradeTransactionRaw,
-    'time' | 'price' | 'cost' | 'fee' | 'vol' | 'margin' | 'leverage'
-  > {
-  txid: string;
-  time: Date;
-  price: number;
-  cost: number;
-  fee: number;
-  vol: number;
-  margin: number;
-  leverage: number;
-}
-
 export interface PaginatedExchangeResponse<T> {
   currentPage: number;
   hasNextPage: boolean;
