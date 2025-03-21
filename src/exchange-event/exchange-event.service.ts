@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ExchangeEvent } from './entities/exchange-event.entity';
+import { CreateExchangeEventDto } from './dto/create-exchange-event';
+import { UpdateExchangeEventDto } from './dto/update-exchange-event';
+import { ExchangeEventSchema } from './dto/exchange-event.schema';
 
 @Injectable()
 export class ExchangeEventService {
@@ -10,11 +13,18 @@ export class ExchangeEventService {
     private readonly exchangeEventRepository: Repository<ExchangeEvent>,
   ) {}
 
-  create(exchangeEvent: ExchangeEvent) {
+  private validateExchangeEvents(exchangeEvents: CreateExchangeEventDto[]) {
+    exchangeEvents.forEach((exchangeEvent) => {
+      ExchangeEventSchema.parse(exchangeEvent);
+    });
+  }
+
+  public create(exchangeEvent: CreateExchangeEventDto) {
     return this.createMany([exchangeEvent]);
   }
 
-  createMany(exchangeEvents: ExchangeEvent[]) {
+  public createMany(exchangeEvents: CreateExchangeEventDto[]) {
+    this.validateExchangeEvents(exchangeEvents);
     return this.exchangeEventRepository.manager
       .createQueryBuilder()
       .insert()
@@ -24,23 +34,23 @@ export class ExchangeEventService {
       .execute();
   }
 
-  findAll() {
+  public findAll() {
     return this.exchangeEventRepository.find();
   }
 
-  findOne(id: number) {
+  public findOne(id: number) {
     return this.exchangeEventRepository.findOne({ where: { id } });
   }
 
-  update(id: number, partialEntity: Partial<ExchangeEvent>) {
+  public update(id: number, partialEntity: UpdateExchangeEventDto) {
     return this.exchangeEventRepository.update(id, partialEntity);
   }
 
-  remove(id: number) {
+  public remove(id: number) {
     return this.exchangeEventRepository.delete(id);
   }
 
-  findLatestExchangeEventTimestamp() {
+  public findLatestExchangeEventTimestamp() {
     return this.exchangeEventRepository.findOne({
       order: { time: 'DESC' },
     });

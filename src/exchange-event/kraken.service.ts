@@ -5,8 +5,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as crypto from 'crypto';
 import * as querystring from 'querystring';
 import { PaginatedExchangeResponse } from './types/exchange-event';
-import { KrakenTradeTransactionRaw } from './types/exchange-transaction';
 import { ExchangeEvent } from './types/exchange-event';
+import {
+  KrakenTradeTransactionDictionary,
+  KrakenTradeTransactionResponse,
+} from './types/kraken-api-responses';
 
 interface KrakenResponse<T> {
   error: string[];
@@ -102,7 +105,7 @@ export class KrakenService {
    * @returns The trade transaction array
    */
   private convertTradeTransactionRawToTradeTransaction(
-    rawTradeDictionary: Record<string, KrakenTradeTransactionRaw>,
+    rawTradeDictionary: KrakenTradeTransactionDictionary,
   ): ExchangeEvent[] {
     return Object.entries(rawTradeDictionary).map(([txid, rawTrade]) => ({
       ...rawTrade,
@@ -165,10 +168,10 @@ export class KrakenService {
       params.ofs = offset;
     }
 
-    const response = await this.sendRequest<{
-      trades: Record<string, KrakenTradeTransactionRaw>;
-      count: number;
-    }>('0/private/TradesHistory', params);
+    const response = await this.sendRequest<KrakenTradeTransactionResponse>(
+      '0/private/TradesHistory',
+      params,
+    );
 
     const tradeTransactions = this.convertTradeTransactionRawToTradeTransaction(
       response.result.trades,

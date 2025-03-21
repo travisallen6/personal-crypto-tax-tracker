@@ -3,8 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { KrakenService } from './kraken.service';
 import { PaginatedExchangeResponse } from './types/exchange-event';
 import axios, { AxiosInstance } from 'axios';
-import { KrakenTradeTransactionRaw } from './types/exchange-transaction';
 import { ExchangeEvent } from './types/exchange-event';
+import { KrakenTradeTransactionDictionary } from './types/kraken-api-responses';
 // Mock axios
 jest.mock('axios');
 const mockAxios = axios as jest.Mocked<typeof axios>;
@@ -50,7 +50,7 @@ describe('KrakenService', () => {
   });
 
   describe('getClosedTrades', () => {
-    const mockTrades: Record<string, KrakenTradeTransactionRaw> = {
+    const mockTrades: KrakenTradeTransactionDictionary = {
       TXID1: {
         aclass: 'forex',
         leverage: '0',

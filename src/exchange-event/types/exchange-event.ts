@@ -1,23 +1,17 @@
-import { KrakenTradeTransactionRaw } from './exchange-transaction';
+import { z } from 'zod';
+import {
+  ExchangeEventDBSchema,
+  ExchangeEventSchema,
+} from '../dto/exchange-event.schema';
 
-export interface PaginatedExchangeResponse<T> {
+// New type definitions using Zod
+export type ExchangeEvent = z.infer<typeof ExchangeEventSchema>;
+
+export type ExchangeEventDB = z.infer<typeof ExchangeEventDBSchema>;
+
+export type PaginatedExchangeResponse<T> = {
   results: T;
   hasNextPage: boolean;
   currentPage: number;
   resultsCount: number;
-}
-
-export interface ExchangeEvent
-  extends Omit<
-    KrakenTradeTransactionRaw,
-    'time' | 'price' | 'cost' | 'fee' | 'vol' | 'margin' | 'leverage'
-  > {
-  txid: string;
-  time: Date;
-  price: number;
-  cost: number;
-  fee: number;
-  vol: number;
-  margin: number;
-  leverage: number;
-}
+};
