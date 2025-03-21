@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ChainEventSyncService } from './chain-event-sync.service';
 import { ChainEventService } from './chain-event.service';
 import { EtherscanService } from './etherscan.service';
-import { ChainEventTransaction } from './types/chain-event';
+import { ChainEventTransaction } from './types/chain-event-transaction';
 import { Logger, InternalServerErrorException } from '@nestjs/common';
 
 describe('ChainEventSyncService', () => {

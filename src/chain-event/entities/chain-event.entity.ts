@@ -1,7 +1,13 @@
 import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 import { ChainEventDB } from '../types/chain-event';
-
 @Entity()
+@Index(
+  'chain_event_unique_id',
+  ['transactionHash', 'from', 'to', 'contractAddress'],
+  {
+    unique: true,
+  },
+)
 export class ChainEvent implements ChainEventDB {
   @PrimaryGeneratedColumn()
   id: number;
@@ -59,8 +65,4 @@ export class ChainEvent implements ChainEventDB {
 
   @Column({ type: 'bigint', nullable: false })
   confirmations: number;
-
-  @Column({ type: 'varchar', length: 100, nullable: false })
-  @Index({ unique: true })
-  chainEventUniqueId: string;
 }

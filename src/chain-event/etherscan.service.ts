@@ -2,7 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { EtherscanConfig } from '../config/config';
 import axios, { AxiosInstance } from 'axios';
 import { Injectable } from '@nestjs/common';
-import { ChainEventTransaction } from './types/chain-event';
+import { ChainEventTransaction } from './types/chain-event-transaction';
 
 interface EtherscanRequest {
   module: 'account';
