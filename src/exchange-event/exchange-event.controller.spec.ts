@@ -1,8 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ExchangeEventController } from './exchange-event.controller';
 import { KrakenService } from './kraken.service';
-import { KrakenTradeTransaction } from './types/exchange-transaction';
-
+import { ExchangeEvent } from './types/exchange-event';
 describe('ExchangeEventController', () => {
   let controller: ExchangeEventController;
 
@@ -31,7 +30,7 @@ describe('ExchangeEventController', () => {
 
   describe('getClosedTrades', () => {
     it('should return all closed trades from Kraken service', async () => {
-      const mockTrades: KrakenTradeTransaction[] = [
+      const mockTrades: ExchangeEvent[] = [
         {
           txid: 'TXID1',
           aclass: 'forex',
@@ -97,7 +96,7 @@ describe('ExchangeEventController', () => {
 
   describe('getSellTrades', () => {
     it('should return only sell trades from Kraken service', async () => {
-      const mockSellTrades: KrakenTradeTransaction[] = [
+      const mockSellTrades: ExchangeEvent[] = [
         {
           txid: 'TXID1',
           aclass: 'forex',

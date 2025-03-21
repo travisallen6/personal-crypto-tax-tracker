@@ -3,11 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { KrakenService } from './kraken.service';
 import { PaginatedExchangeResponse } from './types/exchange-event';
 import axios, { AxiosInstance } from 'axios';
-import {
-  KrakenTradeTransaction,
-  KrakenTradeTransactionRaw,
-} from './types/exchange-transaction';
-
+import { ExchangeEvent } from './types/exchange-event';
+import { KrakenTradeTransactionDictionary } from './types/kraken-api-responses';
 // Mock axios
 jest.mock('axios');
 const mockAxios = axios as jest.Mocked<typeof axios>;
@@ -53,7 +50,7 @@ describe('KrakenService', () => {
   });
 
   describe('getClosedTrades', () => {
-    const mockTrades: Record<string, KrakenTradeTransactionRaw> = {
+    const mockTrades: KrakenTradeTransactionDictionary = {
       TXID1: {
         aclass: 'forex',
         leverage: '0',
@@ -90,20 +87,20 @@ describe('KrakenService', () => {
       },
     };
 
-    const expectedTrades: KrakenTradeTransaction[] = Object.entries(
-      mockTrades,
-    ).map(([txid, rawTrade]) => ({
-      txid,
-      ...rawTrade,
-      leverage: +rawTrade.leverage,
-      time: new Date(rawTrade.time * 1000),
-      price: +rawTrade.price,
-      cost: +rawTrade.cost,
-      fee: +rawTrade.fee,
-      vol: +rawTrade.vol,
-      margin: +rawTrade.margin,
-      misc: rawTrade.misc,
-    }));
+    const expectedTrades: ExchangeEvent[] = Object.entries(mockTrades).map(
+      ([txid, rawTrade]) => ({
+        txid,
+        ...rawTrade,
+        leverage: +rawTrade.leverage,
+        time: new Date(rawTrade.time * 1000),
+        price: +rawTrade.price,
+        cost: +rawTrade.cost,
+        fee: +rawTrade.fee,
+        vol: +rawTrade.vol,
+        margin: +rawTrade.margin,
+        misc: rawTrade.misc,
+      }),
+    );
 
     it('should call Kraken API with correct parameters without start/end', async () => {
       mockClient.post.mockResolvedValueOnce({
@@ -169,7 +166,7 @@ describe('KrakenService', () => {
 
   describe('getSellTrades', () => {
     it('should filter and return only sell trades', async () => {
-      const mockTrades: KrakenTradeTransaction[] = [
+      const mockTrades: ExchangeEvent[] = [
         {
           txid: 'TXID1',
           aclass: 'forex',
@@ -227,15 +224,14 @@ describe('KrakenService', () => {
       ];
 
       // Mock the getClosedTrades method to return our test data
-      const mockResponse: PaginatedExchangeResponse<KrakenTradeTransaction[]> =
-        {
-          results: Object.values(mockTrades).filter(
-            (trade) => trade.type === 'sell',
-          ),
-          hasNextPage: false,
-          currentPage: 1,
-          resultsCount: 2,
-        };
+      const mockResponse: PaginatedExchangeResponse<ExchangeEvent[]> = {
+        results: Object.values(mockTrades).filter(
+          (trade) => trade.type === 'sell',
+        ),
+        hasNextPage: false,
+        currentPage: 1,
+        resultsCount: 2,
+      };
 
       jest.spyOn(service, 'getClosedTrades').mockResolvedValue(mockResponse);
 

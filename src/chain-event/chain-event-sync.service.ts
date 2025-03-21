@@ -7,7 +7,8 @@ import stringify from 'json-stringify-deterministic';
 import crypto from 'crypto';
 import { ChainEventService } from './chain-event.service';
 import { EtherscanService } from './etherscan.service';
-import { ChainEventDB, ChainEventTransaction } from './types/chain-event';
+import { ChainEventTransaction } from './types/chain-event-transaction';
+import { ChainEvent } from './types/chain-event';
 
 @Injectable()
 export class ChainEventSyncService {
@@ -18,7 +19,7 @@ export class ChainEventSyncService {
     private etherscanService: EtherscanService,
   ) {}
 
-  private getMaxBlockNumber(chainEvents: ChainEventDB[]) {
+  private getMaxBlockNumber(chainEvents: ChainEvent[]) {
     return Math.max(
       ...chainEvents.map(({ blockNumber }) => {
         return +blockNumber;
@@ -34,7 +35,7 @@ export class ChainEventSyncService {
 
   private convertChainEventTransactionsToChainEventDBs(
     transactions: ChainEventTransaction[],
-  ): ChainEventDB[] {
+  ): ChainEvent[] {
     return transactions.map((transaction) => {
       return {
         ...transaction,
@@ -54,29 +55,30 @@ export class ChainEventSyncService {
   private async fetchChainEventTransactions(
     address: string,
     latestChainEventBlockNumber?: number,
-  ) {
+  ): Promise<ChainEventTransaction[]> {
     const fetchFromBlock = latestChainEventBlockNumber
       ? latestChainEventBlockNumber + 1
       : 0;
-    const chainEventTransactions =
-      await this.etherscanService.getErc20Transfers(address, fetchFromBlock);
+    const etherscanResult = await this.etherscanService.getErc20Transfers(
+      address,
+      fetchFromBlock,
+    );
 
-    if (chainEventTransactions.status === '0') {
-      if (chainEventTransactions.message === 'No transactions found') {
+    if (etherscanResult.status === '0') {
+      if (etherscanResult.message === 'No transactions found') {
         return [];
       }
 
       this.logger.error(
         `Failed to fetch chain event transactions for address ${address}`,
       );
-      this.logger.error(chainEventTransactions);
+      this.logger.error(etherscanResult);
 
       throw new InternalServerErrorException(
         `Failed to fetch chain event transactions for address ${address}`,
       );
     }
-
-    return chainEventTransactions.result;
+    return etherscanResult.result;
   }
 
   async syncChainEvents(address: string, startBlock?: number) {

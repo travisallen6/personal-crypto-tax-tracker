@@ -71,9 +71,11 @@ describe('ChainEventService', () => {
       const createDto: CreateChainEventDto = {
         blockNumber: 12345678,
         timeStamp: new Date(),
-        transactionHash: '0x1234567890abcdef',
+        transactionHash:
+          '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
         nonce: 123,
-        blockHash: '0xabcdef1234567890',
+        blockHash:
+          '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
         from: '0x1234567890abcdef1234567890abcdef12345678',
         contractAddress: '0x1234567890abcdef1234567890abcdef12345678',
         to: '0x1234567890abcdef1234567890abcdef12345678',
@@ -87,7 +89,6 @@ describe('ChainEventService', () => {
         gasUsed: '21000',
         cumulativeGasUsed: '21000',
         confirmations: 10,
-        chainEventUniqueId: 'uniqueId123',
       };
 
       const expectedResult = { raw: [], affected: 1 };
@@ -116,9 +117,11 @@ describe('ChainEventService', () => {
         {
           blockNumber: 12345678,
           timeStamp: new Date(),
-          transactionHash: '0x1234567890abcdef1',
+          transactionHash:
+            '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
           nonce: 123,
-          blockHash: '0xabcdef1234567890',
+          blockHash:
+            '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
           from: '0x1234567890abcdef1234567890abcdef12345678',
           contractAddress: '0x1234567890abcdef1234567890abcdef12345678',
           to: '0x1234567890abcdef1234567890abcdef12345678',
@@ -132,14 +135,15 @@ describe('ChainEventService', () => {
           gasUsed: '21000',
           cumulativeGasUsed: '21000',
           confirmations: 10,
-          chainEventUniqueId: 'uniqueId123',
         },
         {
           blockNumber: 12345679,
           timeStamp: new Date(),
-          transactionHash: '0x1234567890abcdef2',
+          transactionHash:
+            '0x2234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
           nonce: 124,
-          blockHash: '0xabcdef1234567891',
+          blockHash:
+            '0x2234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
           from: '0x1234567890abcdef1234567890abcdef12345678',
           contractAddress: '0x1234567890abcdef1234567890abcdef12345678',
           to: '0x1234567890abcdef1234567890abcdef12345678',
@@ -153,7 +157,6 @@ describe('ChainEventService', () => {
           gasUsed: '21000',
           cumulativeGasUsed: '42000',
           confirmations: 9,
-          chainEventUniqueId: 'uniqueId456',
         },
       ];
 
@@ -184,14 +187,16 @@ describe('ChainEventService', () => {
           id: 1,
           blockNumber: 12345678,
           timeStamp: new Date(),
-          transactionHash: '0x1234567890abcdef',
+          transactionHash:
+            '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
           chainEventUniqueId: 'uniqueId123',
         },
         {
           id: 2,
           blockNumber: 12345679,
           timeStamp: new Date(),
-          transactionHash: '0x1234567890abcdef2',
+          transactionHash:
+            '0x2234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
           chainEventUniqueId: 'uniqueId456',
         },
       ];
@@ -212,7 +217,8 @@ describe('ChainEventService', () => {
         id,
         blockNumber: 12345678,
         timeStamp: new Date(),
-        transactionHash: '0x1234567890abcdef',
+        transactionHash:
+          '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
         chainEventUniqueId: 'uniqueId123',
       };
 

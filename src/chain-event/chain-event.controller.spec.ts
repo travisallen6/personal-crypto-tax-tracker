@@ -93,7 +93,28 @@ describe('ChainEventController', () => {
 
   describe('create', () => {
     it('should create a chain event', async () => {
-      const createDto = {};
+      const createDto = {
+        blockNumber: 12345678,
+        timeStamp: new Date(),
+        transactionHash:
+          '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+        nonce: 123,
+        blockHash:
+          '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+        from: '0x1234567890abcdef1234567890abcdef12345678',
+        contractAddress: '0x1234567890abcdef1234567890abcdef12345678',
+        to: '0x1234567890abcdef1234567890abcdef12345678',
+        value: '1000000000000000000',
+        tokenName: 'Test Token',
+        tokenSymbol: 'TEST',
+        tokenDecimal: 18,
+        transactionIndex: 1,
+        gas: 21000,
+        gasPrice: '5000000000',
+        gasUsed: '21000',
+        cumulativeGasUsed: '21000',
+        confirmations: 10,
+      };
       const result = { id: 1 };
       jest
         .spyOn(service, 'create')
@@ -105,7 +126,11 @@ describe('ChainEventController', () => {
 
   describe('update', () => {
     it('should update a chain event', async () => {
-      const updateDto = {};
+      const updateDto = {
+        blockNumber: 12345680,
+        confirmations: 20,
+        tokenName: 'Updated Token',
+      };
       const result = { affected: 1 };
       jest
         .spyOn(service, 'update')

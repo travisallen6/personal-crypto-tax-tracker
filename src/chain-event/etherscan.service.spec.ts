@@ -13,7 +13,7 @@ jest.mock('axios', () => ({
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { EtherscanService } from './etherscan.service';
-import { ChainEventTransaction } from './types/chain-event';
+import { ChainEventTransaction } from './types/chain-event-transaction';
 
 // Define the response type for our mock
 interface MockResponse<T> {

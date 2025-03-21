@@ -6,6 +6,8 @@ import { ChainEvent } from './chain-event/entities/chain-event.entity';
 import config, { DBConfig } from './config/config';
 import { LoggerModule } from './logger/logger.module';
 import { ExchangeEventModule } from './exchange-event/exchange-event.module';
+import { APP_PIPE } from '@nestjs/core';
+import { ZodValidationPipe } from 'nestjs-zod';
 
 @Module({
   imports: [
@@ -35,6 +37,11 @@ import { ExchangeEventModule } from './exchange-event/exchange-event.module';
     }),
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_PIPE,
+      useClass: ZodValidationPipe,
+    },
+  ],
 })
 export class AppModule {}
