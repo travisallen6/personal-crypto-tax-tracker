@@ -122,10 +122,9 @@ describe('KrakenService', () => {
       );
 
       expect(result).toEqual({
-        hasNextPage: false,
-        currentPage: 1,
         results: expectedTrades,
-        resultsCount: expectedTrades.length,
+        currentOffset: 0,
+        totalResultsCount: expectedTrades.length,
       });
     });
 
@@ -225,12 +224,9 @@ describe('KrakenService', () => {
 
       // Mock the getClosedTrades method to return our test data
       const mockResponse: PaginatedExchangeResponse<ExchangeEvent[]> = {
-        results: Object.values(mockTrades).filter(
-          (trade) => trade.type === 'sell',
-        ),
-        hasNextPage: false,
-        currentPage: 1,
-        resultsCount: 2,
+        results: mockTrades.filter((trade) => trade.type === 'sell'),
+        currentOffset: 0,
+        totalResultsCount: mockTrades.length,
       };
 
       jest.spyOn(service, 'getClosedTrades').mockResolvedValue(mockResponse);

@@ -11,7 +11,6 @@ export type ExchangeEventDB = z.infer<typeof ExchangeEventDBSchema>;
 
 export type PaginatedExchangeResponse<T> = {
   results: T;
-  hasNextPage: boolean;
-  currentPage: number;
-  resultsCount: number;
+  totalResultsCount: number;
+  currentOffset: number;
 };

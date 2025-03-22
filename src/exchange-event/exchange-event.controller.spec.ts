@@ -1,157 +1,137 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ExchangeEventController } from './exchange-event.controller';
-import { KrakenService } from './kraken.service';
-import { ExchangeEvent } from './types/exchange-event';
+import { ExchangeEventService } from './exchange-event.service';
+import { ExchangeEventSyncService } from './exchange-event-sync.service';
+import { CreateExchangeEventDto } from './dto/create-exchange-event';
+import { UpdateExchangeEventDto } from './dto/update-exchange-event';
+
 describe('ExchangeEventController', () => {
   let controller: ExchangeEventController;
+  let exchangeEventService: ExchangeEventService;
+  let exchangeEventSyncService: ExchangeEventSyncService;
 
-  const mockKrakenService = {
-    getClosedTrades: jest.fn(),
-    getSellTrades: jest.fn(),
-  };
+  // Mock data for testing
+  const mockExchangeEvent = { id: 1, type: 'buy', timestamp: 1629000000 };
+  const mockExchangeEvents = [
+    mockExchangeEvent,
+    { id: 2, type: 'sell', timestamp: 1629100000 },
+  ];
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    // Create mock implementations of the services
+    const exchangeEventServiceMock = {
+      create: jest.fn().mockResolvedValue(mockExchangeEvent),
+      createMany: jest.fn().mockResolvedValue(mockExchangeEvents),
+      findAll: jest.fn().mockResolvedValue(mockExchangeEvents),
+      findOne: jest
+        .fn()
+        .mockImplementation((id) =>
+          Promise.resolve(mockExchangeEvents.find((event) => event.id === id)),
+        ),
+      update: jest
+        .fn()
+        .mockResolvedValue({ ...mockExchangeEvent, updatedField: true }),
+      remove: jest.fn().mockResolvedValue({ deleted: true }),
+    };
+
+    const exchangeEventSyncServiceMock = {
+      syncExchangeEvents: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const testModule: TestingModule = await Test.createTestingModule({
       controllers: [ExchangeEventController],
       providers: [
         {
-          provide: KrakenService,
-          useValue: mockKrakenService,
+          provide: ExchangeEventService,
+          useValue: exchangeEventServiceMock,
+        },
+        {
+          provide: ExchangeEventSyncService,
+          useValue: exchangeEventSyncServiceMock,
         },
       ],
     }).compile();
 
-    controller = module.get<ExchangeEventController>(ExchangeEventController);
+    controller = testModule.get<ExchangeEventController>(
+      ExchangeEventController,
+    );
+    exchangeEventService =
+      testModule.get<ExchangeEventService>(ExchangeEventService);
+    exchangeEventSyncService = testModule.get<ExchangeEventSyncService>(
+      ExchangeEventSyncService,
+    );
   });
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('getClosedTrades', () => {
-    it('should return all closed trades from Kraken service', async () => {
-      const mockTrades: ExchangeEvent[] = [
-        {
-          txid: 'TXID1',
-          aclass: 'forex',
-          leverage: 0,
-          trade_id: 0,
-          maker: false,
-          ordertxid: 'OTXID1',
-          pair: 'XBTEUR',
-          time: new Date(1609459200),
-          type: 'sell',
-          ordertype: 'market',
-          price: 30000.0,
-          cost: 300.0,
-          fee: 0.6,
-          vol: 0.01,
-          margin: 0,
-          misc: '',
-        },
-        {
-          txid: 'TXID2',
-          aclass: 'forex',
-          leverage: 0,
-          trade_id: 0,
-          maker: false,
-          ordertxid: 'OTXID2',
-          pair: 'ETHEUR',
-          time: new Date(1609459300),
-          type: 'buy',
-          ordertype: 'limit',
-          price: 1000.0,
-          cost: 100.0,
-          fee: 0.2,
-          vol: 0.1,
-          margin: 0,
-          misc: '',
-        },
-      ];
-
-      mockKrakenService.getClosedTrades.mockResolvedValue(mockTrades);
-
-      const result = await controller.getClosedTrades();
-
-      expect(result).toEqual(mockTrades);
-      expect(mockKrakenService.getClosedTrades).toHaveBeenCalled();
-    });
-
-    it('should pass parameters to Kraken service', async () => {
-      const start = 1609459000;
-      const end = 1609460000;
-      const offset = 10;
-
-      mockKrakenService.getClosedTrades.mockResolvedValue({});
-
-      await controller.getClosedTrades(start, end, offset);
-
-      expect(mockKrakenService.getClosedTrades).toHaveBeenCalledWith(
-        start,
-        end,
-        offset,
-      );
+  describe('create', () => {
+    it('should create a new exchange event', async () => {
+      const createDto = { type: 'buy' } as CreateExchangeEventDto;
+      const result = await controller.create(createDto);
+      expect(exchangeEventService.create).toHaveBeenCalledWith(createDto);
+      expect(result).toEqual(mockExchangeEvent);
     });
   });
 
-  describe('getSellTrades', () => {
-    it('should return only sell trades from Kraken service', async () => {
-      const mockSellTrades: ExchangeEvent[] = [
-        {
-          txid: 'TXID1',
-          aclass: 'forex',
-          leverage: 0,
-          trade_id: 0,
-          maker: false,
-          ordertxid: 'OTXID1',
-          pair: 'XBTEUR',
-          time: new Date(1609459200),
-          type: 'sell',
-          ordertype: 'market',
-          price: 30000.0,
-          cost: 300.0,
-          fee: 0.6,
-          vol: 0.01,
-          margin: 0,
-          misc: '',
-        },
-        {
-          txid: 'TXID2',
-          aclass: 'forex',
-          leverage: 0,
-          trade_id: 0,
-          maker: false,
-          ordertxid: 'OTXID3',
-          pair: 'XBTEUR',
-          time: new Date(1609459400),
-          type: 'sell',
-          ordertype: 'market',
-          price: 31000.0,
-          cost: 310.0,
-          fee: 0.62,
-          vol: 0.01,
-          margin: 0,
-          misc: '',
-        },
-      ];
-
-      mockKrakenService.getSellTrades.mockResolvedValue(mockSellTrades);
-
-      const result = await controller.getSellTrades();
-
-      expect(result).toEqual(mockSellTrades);
-      expect(mockKrakenService.getSellTrades).toHaveBeenCalled();
+  describe('createMany', () => {
+    it('should create multiple exchange events', async () => {
+      const createDtos = [
+        { type: 'buy' },
+        { type: 'sell' },
+      ] as CreateExchangeEventDto[];
+      const result = await controller.createMany(createDtos);
+      expect(exchangeEventService.createMany).toHaveBeenCalledWith(createDtos);
+      expect(result).toEqual(mockExchangeEvents);
     });
+  });
 
-    it('should pass parameters to Kraken service', async () => {
-      const start = 1609459000;
-      const end = 1609460000;
+  describe('findAll', () => {
+    it('should return all exchange events', async () => {
+      const result = await controller.findAll();
+      expect(exchangeEventService.findAll).toHaveBeenCalled();
+      expect(result).toEqual(mockExchangeEvents);
+    });
+  });
 
-      mockKrakenService.getSellTrades.mockResolvedValue([]);
+  describe('findOne', () => {
+    it('should return a specific exchange event by id', async () => {
+      const id = 1;
+      const result = await controller.findOne(id);
+      expect(exchangeEventService.findOne).toHaveBeenCalledWith(id);
+      expect(result).toEqual(mockExchangeEvent);
+    });
+  });
 
-      await controller.getSellTrades(start, end);
+  describe('update', () => {
+    it('should update an exchange event', async () => {
+      const id = 1;
+      const updateDto = { updatedField: true } as UpdateExchangeEventDto;
+      const result = await controller.update(id, updateDto);
+      expect(exchangeEventService.update).toHaveBeenCalledWith(id, updateDto);
+      expect(result).toEqual({ ...mockExchangeEvent, updatedField: true });
+    });
+  });
 
-      expect(mockKrakenService.getSellTrades).toHaveBeenCalledWith(start, end);
+  describe('remove', () => {
+    it('should remove an exchange event', async () => {
+      const id = 1;
+      const result = await controller.remove(id);
+      expect(exchangeEventService.remove).toHaveBeenCalledWith(id);
+      expect(result).toEqual({ deleted: true });
+    });
+  });
+
+  describe('syncExchangeEvents', () => {
+    it('should sync exchange events and return success message', async () => {
+      const result = await controller.syncExchangeEvents();
+      expect(exchangeEventSyncService.syncExchangeEvents).toHaveBeenCalled();
+      expect(result).toEqual({
+        success: true,
+        message: 'Exchange events sync completed',
+      });
     });
   });
 });

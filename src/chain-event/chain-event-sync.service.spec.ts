@@ -21,7 +21,7 @@ describe('ChainEventSyncService', () => {
       getErc20Transfers: jest.fn(),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    const testModule: TestingModule = await Test.createTestingModule({
       providers: [
         ChainEventSyncService,
         {
@@ -35,7 +35,7 @@ describe('ChainEventSyncService', () => {
       ],
     }).compile();
 
-    service = module.get<ChainEventSyncService>(ChainEventSyncService);
+    service = testModule.get<ChainEventSyncService>(ChainEventSyncService);
 
     // Spy on logger to prevent console output during tests
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
