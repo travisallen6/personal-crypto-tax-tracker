@@ -8,6 +8,7 @@ import { LoggerModule } from './logger/logger.module';
 import { ExchangeEventModule } from './exchange-event/exchange-event.module';
 import { APP_PIPE } from '@nestjs/core';
 import { ZodValidationPipe } from 'nestjs-zod';
+import { ExchangeEvent } from './exchange-event/entities/exchange-event.entity';
 
 @Module({
   imports: [
@@ -30,7 +31,7 @@ import { ZodValidationPipe } from 'nestjs-zod';
           username: dbConfig.username,
           password: dbConfig.password,
           database: dbConfig.name,
-          entities: [ChainEvent],
+          entities: [ChainEvent, ExchangeEvent],
           synchronize: dbConfig.autoSync,
         };
       },

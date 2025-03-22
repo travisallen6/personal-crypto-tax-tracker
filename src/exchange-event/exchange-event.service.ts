@@ -52,6 +52,7 @@ export class ExchangeEventService {
 
   public async findLatestExchangeEventTimestamp() {
     const result = await this.exchangeEventRepository.findOne({
+      where: {},
       order: { time: 'DESC' },
     });
 
