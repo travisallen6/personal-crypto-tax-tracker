@@ -7,6 +7,7 @@ import { ChainEventService } from './chain-event.service';
 import { ChainEventSyncService } from './chain-event-sync.service';
 import { EtherscanService } from './etherscan.service';
 import { ChainEvent } from './entities/chain-event.entity';
+import { CryptoPriceSyncService } from '../crypto-price/crypto-price-sync.service';
 
 // Create mock repository
 type MockRepository = Partial<Record<keyof Repository<any>, jest.Mock>>;
@@ -26,6 +27,17 @@ const mockChainEventSyncService = {
 
 const mockConfigService = {
   get: jest.fn(),
+  getOrThrow: jest.fn((key) => {
+    if (key === 'chainEvent') {
+      return { earliestBlockNumber: 18908895 };
+    }
+    return {};
+  }),
+};
+
+// Mock for CryptoPriceSyncService
+const mockCryptoPriceSyncService = {
+  populateMissingCryptoPrices: jest.fn(),
 };
 
 describe('ChainEventController', () => {
@@ -55,6 +67,10 @@ describe('ChainEventController', () => {
         {
           provide: ConfigService,
           useValue: mockConfigService,
+        },
+        {
+          provide: CryptoPriceSyncService,
+          useValue: mockCryptoPriceSyncService,
         },
       ],
     }).compile();
