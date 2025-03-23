@@ -23,7 +23,7 @@ export class CryptoPrice implements CryptoPriceDB {
   @Column({ type: 'timestamptz', nullable: false })
   timestamp: Date;
 
-  @Column({ type: 'bigint', nullable: false })
+  @Column({ type: 'decimal', precision: 20, scale: 6, nullable: false })
   price: number;
 
   @Column({ type: 'varchar', length: 10, nullable: false })

@@ -26,6 +26,11 @@ export interface KrakenConfig {
 export interface CoinGeckoConfig {
   timestampRangeInterval: number;
   coinIdMap: Record<string, string>;
+  apiKey: string;
+}
+
+export interface ChainEventConfig {
+  earliestBlockNumber: number;
 }
 
 class Config {
@@ -83,6 +88,11 @@ class Config {
       BTC: 'bitcoin',
       GALA: 'gala',
     },
+    apiKey: this.readEnvVariable('COINGECKO_API_KEY', { required: true }),
+  };
+
+  public readonly chainEvent: ChainEventConfig = {
+    earliestBlockNumber: 18908895,
   };
 }
 

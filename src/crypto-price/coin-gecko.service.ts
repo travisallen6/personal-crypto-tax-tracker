@@ -3,7 +3,7 @@ import axios, { AxiosInstance } from 'axios';
 import { getUnixTimestamp } from '../utils/date';
 import { ConfigService } from '@nestjs/config';
 import { CoinGeckoConfig } from '../config/config';
-
+import difficultPrices from '../data/difficult-prices';
 export interface CoinGeckoMarketHistoryResponse {
   prices: [number, number][]; // [timestamp, price]
   market_caps: [number, number][];
@@ -24,18 +24,41 @@ export class CoinGeckoService {
   private priceInterval: number;
   private coinIdMap: Record<string, string>;
 
+  private difficultPrices: Map<string, TokenPriceData>;
+
   constructor(private config: ConfigService) {
     const coinGeckoConfig =
       this.config.getOrThrow<CoinGeckoConfig>('coinGecko');
     this.priceInterval = coinGeckoConfig.timestampRangeInterval;
     this.coinIdMap = coinGeckoConfig.coinIdMap;
-    this.initializeClient();
+    this.initializeClient(coinGeckoConfig.apiKey);
+    this.initializeDifficultPrices();
   }
 
-  private initializeClient() {
+  private buildDifficultPricesKey(symbol: string, timestamp: Date) {
+    return `${symbol}-${timestamp.toISOString()}`;
+  }
+
+  private initializeDifficultPrices() {
+    this.difficultPrices = new Map(
+      difficultPrices.map(({ price, timeStamp, tokenSymbol }) => [
+        this.buildDifficultPricesKey(tokenSymbol, timeStamp),
+        {
+          timestamp: new Date(timeStamp),
+          price,
+          symbol: tokenSymbol,
+        },
+      ]),
+    );
+  }
+
+  private initializeClient(apiKey: string) {
     this.client = axios.create({
       baseURL: 'https://api.coingecko.com/api/v3',
       timeout: 10000,
+      headers: {
+        'x-cg-demo-api-key': apiKey,
+      },
     });
   }
 
@@ -50,6 +73,13 @@ export class CoinGeckoService {
     timestamp: Date,
   ): Promise<TokenPriceData | null> {
     try {
+      const existingDifficultPrice = this.difficultPrices.get(
+        this.buildDifficultPricesKey(symbol, timestamp),
+      );
+      if (existingDifficultPrice) {
+        return existingDifficultPrice;
+      }
+
       const coinId = this.getCoinIdFromSymbol(symbol);
       if (!coinId) {
         this.logger.warn(`No coin ID mapping found for symbol: ${symbol}`);

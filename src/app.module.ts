@@ -36,6 +36,7 @@ import { CryptoPriceModule } from './crypto-price/crypto-price.module';
           database: dbConfig.name,
           entities: [ChainEvent, ExchangeEvent, CryptoPrice],
           synchronize: dbConfig.autoSync,
+          timezone: 'Z',
         };
       },
     }),

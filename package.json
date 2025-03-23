@@ -28,6 +28,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/typeorm": "^11.0.0",
     "axios": "^1.8.2",
+    "date-fns": "^4.1.0",
     "json-stringify-deterministic": "^1.0.12",
     "nest-winston": "^1.10.2",
     "nestjs-zod": "^4.3.1",
