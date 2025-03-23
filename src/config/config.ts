@@ -23,6 +23,16 @@ export interface KrakenConfig {
   baseUrl: string;
 }
 
+export interface CoinGeckoConfig {
+  timestampRangeInterval: number;
+  coinIdMap: Record<string, string>;
+  apiKey: string;
+}
+
+export interface ChainEventConfig {
+  earliestBlockNumber: number;
+}
+
 class Config {
   private defaultReadEnvOptions: ReadEnvVariableOptions = {
     required: false,
@@ -69,6 +79,20 @@ class Config {
       required: true,
       default: 'https://api.kraken.com',
     }),
+  };
+
+  public readonly coinGecko: CoinGeckoConfig = {
+    timestampRangeInterval: 24 * 60 * 60 * 1000,
+    coinIdMap: {
+      ETH: 'ethereum',
+      BTC: 'bitcoin',
+      GALA: 'gala',
+    },
+    apiKey: this.readEnvVariable('COINGECKO_API_KEY', { required: true }),
+  };
+
+  public readonly chainEvent: ChainEventConfig = {
+    earliestBlockNumber: 18908895,
   };
 }
 

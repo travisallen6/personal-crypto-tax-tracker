@@ -3,12 +3,11 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import stringify from 'json-stringify-deterministic';
-import crypto from 'crypto';
 import { ChainEventService } from './chain-event.service';
 import { EtherscanService } from './etherscan.service';
 import { ChainEventTransaction } from './types/chain-event-transaction';
 import { ChainEvent } from './types/chain-event';
+import { CryptoPriceSyncService } from '../crypto-price/crypto-price-sync.service';
 
 @Injectable()
 export class ChainEventSyncService {
@@ -17,6 +16,7 @@ export class ChainEventSyncService {
   constructor(
     private chainEventService: ChainEventService,
     private etherscanService: EtherscanService,
+    private cryptoPriceSyncService: CryptoPriceSyncService,
   ) {}
 
   private getMaxBlockNumber(chainEvents: ChainEvent[]) {
@@ -27,13 +27,7 @@ export class ChainEventSyncService {
     );
   }
 
-  private calculateChainEventUniqueId(transaction: ChainEventTransaction) {
-    const stringified = stringify(transaction);
-
-    return crypto.createHash('sha1').update(stringified).digest('hex');
-  }
-
-  private convertChainEventTransactionsToChainEventDBs(
+  private convertChainEventTransactionsToChainEvents(
     transactions: ChainEventTransaction[],
   ): ChainEvent[] {
     return transactions.map((transaction) => {
@@ -47,7 +41,6 @@ export class ChainEventSyncService {
         transactionIndex: +transaction.transactionIndex,
         gas: +transaction.gas,
         confirmations: +transaction.confirmations,
-        chainEventUniqueId: this.calculateChainEventUniqueId(transaction),
       };
     });
   }
@@ -95,10 +88,11 @@ export class ChainEventSyncService {
     );
 
     if (chainEventTransactions.length === 0) {
+      await this.syncChainEventsWithCryptoPrices();
       return;
     }
 
-    const chainEvents = this.convertChainEventTransactionsToChainEventDBs(
+    const chainEvents = this.convertChainEventTransactionsToChainEvents(
       chainEventTransactions,
     );
 
@@ -107,6 +101,36 @@ export class ChainEventSyncService {
     await this.syncChainEvents(
       address,
       this.getMaxBlockNumber(chainEvents) + 1,
+    );
+  }
+
+  public async syncChainEventsWithCryptoPrices() {
+    const chainEvents =
+      await this.chainEventService.findChainEventsMissingCryptoPrice();
+
+    if (chainEvents.length === 0) {
+      this.logger.log('No chain events missing crypto prices');
+      return;
+    }
+
+    const cryptoPrices =
+      await this.cryptoPriceSyncService.populateMissingCryptoPrices(
+        chainEvents,
+      );
+
+    this.logger.log(`Found ${cryptoPrices.length} crypto prices to update`);
+    const results =
+      await this.chainEventService.updateChainEventsWithCryptoPrice(
+        cryptoPrices,
+      );
+
+    const affectedCount = results.reduce(
+      (acc, result) => acc + (result.affected ?? 0),
+      0,
+    );
+
+    this.logger.log(
+      `Updated ${affectedCount} chain events with crypto price IDs`,
     );
   }
 }

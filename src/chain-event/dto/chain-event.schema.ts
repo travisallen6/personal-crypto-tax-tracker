@@ -32,6 +32,7 @@ export const ChainEventDBSchema = z.object({
   gasUsed: StringifiedNumberSchema,
   cumulativeGasUsed: StringifiedNumberSchema,
   confirmations: z.number().int().nonnegative(),
+  cryptoPriceId: z.number().int().positive().optional(),
 });
 
 export const ChainEventSchema = ChainEventDBSchema.omit({ id: true });

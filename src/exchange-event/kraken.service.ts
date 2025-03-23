@@ -123,22 +123,19 @@ export class KrakenService {
   /**
    * Apply pagination metadata to the result
    * @param offset The offset of the result
-   * @param resultCount The number of results in the current page
    * @param totalCount The total number of results
    * @param result The result array
    * @returns The paginated exchange response
    */
   private applyPaginationMetadata<T>(
     offset: number,
-    resultCount: number,
     totalCount: number,
     results: T[],
   ): PaginatedExchangeResponse<T[]> {
     return {
-      hasNextPage: offset + resultCount < totalCount,
-      currentPage: Math.floor(offset / resultCount) + 1,
+      currentOffset: offset,
+      totalResultsCount: totalCount,
       results,
-      resultsCount: results.length,
     };
   }
 
@@ -154,7 +151,7 @@ export class KrakenService {
     end?: number,
     offset?: number,
   ): Promise<PaginatedExchangeResponse<ExchangeEvent[]>> {
-    const params: Record<string, any> = {};
+    const params: Record<string, number> = {};
 
     if (start) {
       params.start = start;
@@ -165,12 +162,22 @@ export class KrakenService {
     }
 
     if (offset) {
-      params.ofs = offset;
+      params.ofs = offset || 0;
     }
+
+    this.logger.log(
+      `Getting closed trades from Kraken: ${JSON.stringify(params)}`,
+    );
 
     const response = await this.sendRequest<KrakenTradeTransactionResponse>(
       '0/private/TradesHistory',
       params,
+    );
+
+    const currentResultCount = Object.keys(response.result.trades).length;
+
+    this.logger.log(
+      `Kraken response: ${params.ofs + currentResultCount}/${response.result.count} total results`,
     );
 
     const tradeTransactions = this.convertTradeTransactionRawToTradeTransaction(
@@ -179,28 +186,8 @@ export class KrakenService {
 
     return this.applyPaginationMetadata(
       offset || 0,
-      tradeTransactions.length,
       response.result.count,
       tradeTransactions,
     );
-  }
-
-  /**
-   * Get only sell trades from Kraken
-   * @param start Optional UNIX timestamp to start from
-   * @param end Optional UNIX timestamp to end at
-   * @returns Array of sell trade transactions
-   */
-  public async getSellTrades(
-    start?: number,
-    end?: number,
-  ): Promise<PaginatedExchangeResponse<ExchangeEvent[]>> {
-    const allTrades = await this.getClosedTrades(start, end);
-
-    // Filter to only include sell trades
-    return {
-      ...allTrades,
-      results: allTrades.results.filter((trade) => trade.type === 'sell'),
-    };
   }
 }

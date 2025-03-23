@@ -1,63 +1,107 @@
 import {
   Controller,
   Get,
-  Query,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
   ParseIntPipe,
-  Optional,
   Logger,
 } from '@nestjs/common';
-import { KrakenService } from './kraken.service';
+import { ExchangeEventService } from './exchange-event.service';
+import { CreateExchangeEventDto } from './dto/create-exchange-event';
+import { UpdateExchangeEventDto } from './dto/update-exchange-event';
+import { ExchangeEventSyncService } from './exchange-event-sync.service';
 
 @Controller('exchange-event')
 export class ExchangeEventController {
   private readonly logger = new Logger(ExchangeEventController.name);
 
-  constructor(private readonly krakenService: KrakenService) {}
+  constructor(
+    private readonly exchangeEventService: ExchangeEventService,
+    private readonly exchangeEventSyncService: ExchangeEventSyncService,
+  ) {}
 
   /**
-   * Get all closed trades from Kraken
-   * @param start Optional UNIX timestamp to start from
-   * @param end Optional UNIX timestamp to end at
-   * @param offset Optional result offset for pagination
-   * @returns Record of trade transactions
+   * Create a new exchange event
+   * @param createExchangeEventDto Exchange event data
+   * @returns Created exchange event
    */
-  @Get('kraken/trades')
-  async getClosedTrades(
-    @Query('start', new ParseIntPipe({ optional: true }))
-    @Optional()
-    start?: number,
-    @Query('end', new ParseIntPipe({ optional: true }))
-    @Optional()
-    end?: number,
-    @Query('offset', new ParseIntPipe({ optional: true }))
-    @Optional()
-    offset?: number,
-  ): ReturnType<typeof this.krakenService.getClosedTrades> {
-    this.logger.log(
-      `Fetching closed trades from Kraken with params: start=${start}, end=${end}, offset=${offset}`,
-    );
-
-    return this.krakenService.getClosedTrades(start, end, offset);
+  @Post()
+  create(@Body() createExchangeEventDto: CreateExchangeEventDto) {
+    this.logger.log('Creating new exchange event');
+    return this.exchangeEventService.create(createExchangeEventDto);
   }
 
   /**
-   * Get only sell trades from Kraken
-   * @param start Optional UNIX timestamp to start from
-   * @param end Optional UNIX timestamp to end at
-   * @returns Array of sell trade transactions
+   * Create multiple exchange events
+   * @param createExchangeEventDtos Array of exchange event data
+   * @returns Created exchange events
    */
-  @Get('kraken/sell-trades')
-  async getSellTrades(
-    @Query('start', new ParseIntPipe({ optional: true }))
-    @Optional()
-    start?: number,
-    @Query('end', new ParseIntPipe({ optional: true }))
-    @Optional()
-    end?: number,
-  ): ReturnType<typeof this.krakenService.getSellTrades> {
+  @Post('bulk')
+  createMany(@Body() createExchangeEventDtos: CreateExchangeEventDto[]) {
     this.logger.log(
-      `Fetching sell trades from Kraken with params: start=${start}, end=${end}`,
+      `Creating ${createExchangeEventDtos.length} exchange events`,
     );
-    return this.krakenService.getSellTrades(start, end);
+    return this.exchangeEventService.createMany(createExchangeEventDtos);
+  }
+
+  /**
+   * Get all exchange events
+   * @returns Array of all exchange events
+   */
+  @Get()
+  findAll() {
+    this.logger.log('Fetching all exchange events');
+    return this.exchangeEventService.findAll();
+  }
+
+  /**
+   * Get a specific exchange event by ID
+   * @param id Exchange event ID
+   * @returns Exchange event with the specified ID
+   */
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    this.logger.log(`Fetching exchange event with id: ${id}`);
+    return this.exchangeEventService.findOne(id);
+  }
+
+  /**
+   * Update an exchange event
+   * @param id Exchange event ID
+   * @param updateExchangeEventDto Updated exchange event data
+   * @returns Result of the update operation
+   */
+  @Patch(':id')
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateExchangeEventDto: UpdateExchangeEventDto,
+  ) {
+    this.logger.log(`Updating exchange event with id: ${id}`);
+    return this.exchangeEventService.update(id, updateExchangeEventDto);
+  }
+
+  /**
+   * Delete an exchange event
+   * @param id Exchange event ID
+   * @returns Result of the delete operation
+   */
+  @Delete(':id')
+  remove(@Param('id', ParseIntPipe) id: number) {
+    this.logger.log(`Removing exchange event with id: ${id}`);
+    return this.exchangeEventService.remove(id);
+  }
+
+  /**
+   * Sync exchange events from the exchange API
+   * @returns Result of the sync operation
+   */
+  @Post('sync')
+  async syncExchangeEvents() {
+    this.logger.log('Syncing exchange events');
+    await this.exchangeEventSyncService.syncExchangeEvents();
+    return { success: true, message: 'Exchange events sync completed' };
   }
 }

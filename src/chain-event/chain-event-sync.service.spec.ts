@@ -4,24 +4,34 @@ import { ChainEventService } from './chain-event.service';
 import { EtherscanService } from './etherscan.service';
 import { ChainEventTransaction } from './types/chain-event-transaction';
 import { Logger, InternalServerErrorException } from '@nestjs/common';
+import { CryptoPriceSyncService } from '../crypto-price/crypto-price-sync.service';
 
 describe('ChainEventSyncService', () => {
   let service: ChainEventSyncService;
   let chainEventService: Partial<ChainEventService>;
   let etherscanService: Partial<EtherscanService>;
+  let cryptoPriceSyncService: Partial<CryptoPriceSyncService>;
 
   beforeEach(async () => {
     // Create mock services
     chainEventService = {
       findLatestChainEventBlockNumber: jest.fn(),
       createMany: jest.fn(),
+      findChainEventsMissingCryptoPrice: jest.fn().mockResolvedValue([]),
+      updateChainEventsWithCryptoPrice: jest
+        .fn()
+        .mockResolvedValue([{ affected: 0 }]),
     };
 
     etherscanService = {
       getErc20Transfers: jest.fn(),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    cryptoPriceSyncService = {
+      populateMissingCryptoPrices: jest.fn().mockResolvedValue([]),
+    };
+
+    const testModule: TestingModule = await Test.createTestingModule({
       providers: [
         ChainEventSyncService,
         {
@@ -32,13 +42,18 @@ describe('ChainEventSyncService', () => {
           provide: EtherscanService,
           useValue: etherscanService,
         },
+        {
+          provide: CryptoPriceSyncService,
+          useValue: cryptoPriceSyncService,
+        },
       ],
     }).compile();
 
-    service = module.get<ChainEventSyncService>(ChainEventSyncService);
+    service = testModule.get<ChainEventSyncService>(ChainEventSyncService);
 
     // Spy on logger to prevent console output during tests
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
+    jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -237,6 +252,64 @@ describe('ChainEventSyncService', () => {
         101,
       );
       expect(chainEventService.createMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('syncChainEventsWithCryptoPrices', () => {
+    it('should not update any chain events when none are missing crypto prices', async () => {
+      // Mock chain events with no missing crypto prices
+      (
+        chainEventService.findChainEventsMissingCryptoPrice as jest.Mock
+      ).mockResolvedValue([]);
+
+      // Call the method
+      await service.syncChainEventsWithCryptoPrices();
+
+      // Verify that updateChainEventsWithCryptoPrice was not called
+      expect(
+        cryptoPriceSyncService.populateMissingCryptoPrices,
+      ).not.toHaveBeenCalled();
+      expect(
+        chainEventService.updateChainEventsWithCryptoPrice,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('should update chain events with crypto prices when some are missing', async () => {
+      // Mock chain events with missing crypto prices
+      const chainEvents = [
+        { id: 1, tokenSymbol: 'BTC', timeStamp: new Date() },
+        { id: 2, tokenSymbol: 'ETH', timeStamp: new Date() },
+      ];
+
+      // Mock crypto price data
+      const cryptoPrices = [
+        { id: 1, cryptoPriceId: 101 },
+        { id: 2, cryptoPriceId: 102 },
+      ];
+
+      (
+        chainEventService.findChainEventsMissingCryptoPrice as jest.Mock
+      ).mockResolvedValue(chainEvents);
+      (
+        cryptoPriceSyncService.populateMissingCryptoPrices as jest.Mock
+      ).mockResolvedValue(cryptoPrices);
+      (
+        chainEventService.updateChainEventsWithCryptoPrice as jest.Mock
+      ).mockResolvedValue([{ affected: 1 }, { affected: 1 }]);
+
+      // Call the method
+      await service.syncChainEventsWithCryptoPrices();
+
+      // Verify the calls
+      expect(
+        chainEventService.findChainEventsMissingCryptoPrice,
+      ).toHaveBeenCalled();
+      expect(
+        cryptoPriceSyncService.populateMissingCryptoPrices,
+      ).toHaveBeenCalledWith(chainEvents);
+      expect(
+        chainEventService.updateChainEventsWithCryptoPrice,
+      ).toHaveBeenCalledWith(cryptoPrices);
     });
   });
 });

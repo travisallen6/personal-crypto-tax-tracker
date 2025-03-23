@@ -50,9 +50,12 @@ export class ExchangeEventService {
     return this.exchangeEventRepository.delete(id);
   }
 
-  public findLatestExchangeEventTimestamp() {
-    return this.exchangeEventRepository.findOne({
+  public async findLatestExchangeEventTimestamp() {
+    const result = await this.exchangeEventRepository.findOne({
+      where: {},
       order: { time: 'DESC' },
     });
+
+    return result?.time?.getTime?.() || 0;
   }
 }

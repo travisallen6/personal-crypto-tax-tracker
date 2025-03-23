@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { KrakenService } from './kraken.service';
-import { PaginatedExchangeResponse } from './types/exchange-event';
 import axios, { AxiosInstance } from 'axios';
 import { ExchangeEvent } from './types/exchange-event';
 import { KrakenTradeTransactionDictionary } from './types/kraken-api-responses';
@@ -122,10 +121,9 @@ describe('KrakenService', () => {
       );
 
       expect(result).toEqual({
-        hasNextPage: false,
-        currentPage: 1,
         results: expectedTrades,
-        resultsCount: expectedTrades.length,
+        currentOffset: 0,
+        totalResultsCount: expectedTrades.length,
       });
     });
 
@@ -161,90 +159,6 @@ describe('KrakenService', () => {
       await expect(service.getClosedTrades()).rejects.toThrow(
         'Kraken API error: API error: Invalid key',
       );
-    });
-  });
-
-  describe('getSellTrades', () => {
-    it('should filter and return only sell trades', async () => {
-      const mockTrades: ExchangeEvent[] = [
-        {
-          txid: 'TXID1',
-          aclass: 'forex',
-          leverage: 0,
-          trade_id: 0,
-          maker: false,
-          ordertxid: 'OTXID1',
-          pair: 'XBTEUR',
-          time: new Date(1609459200000),
-          type: 'sell',
-          ordertype: 'market',
-          price: 30000.0,
-          cost: 300.0,
-          fee: 0.6,
-          vol: 0.01,
-          margin: 0,
-          misc: '',
-        },
-        {
-          txid: 'TXID2',
-          aclass: 'forex',
-          leverage: 0,
-          trade_id: 0,
-          maker: false,
-          ordertxid: 'OTXID2',
-          pair: 'ETHEUR',
-          time: new Date(1609459300000),
-          type: 'buy',
-          ordertype: 'limit',
-          price: 1000.0,
-          cost: 100.0,
-          fee: 0.2,
-          vol: 0.1,
-          margin: 0,
-          misc: '',
-        },
-        {
-          txid: 'TXID3',
-          aclass: 'forex',
-          leverage: 0,
-          trade_id: 0,
-          maker: false,
-          ordertxid: 'OTXID3',
-          pair: 'XBTEUR',
-          time: new Date(1609459400000),
-          type: 'sell',
-          ordertype: 'market',
-          price: 31000.0,
-          cost: 310.0,
-          fee: 0.62,
-          vol: 0.01,
-          margin: 0,
-          misc: '',
-        },
-      ];
-
-      // Mock the getClosedTrades method to return our test data
-      const mockResponse: PaginatedExchangeResponse<ExchangeEvent[]> = {
-        results: Object.values(mockTrades).filter(
-          (trade) => trade.type === 'sell',
-        ),
-        hasNextPage: false,
-        currentPage: 1,
-        resultsCount: 2,
-      };
-
-      jest.spyOn(service, 'getClosedTrades').mockResolvedValue(mockResponse);
-
-      const result = await service.getSellTrades();
-
-      // Should only return the sell trades (TXID1 and TXID3)
-
-      expect(result.results).toHaveLength(2);
-
-      // Check the first and second items match expected values
-      expect(result.results[0].ordertxid).toBe('OTXID1');
-      expect(result.results[1].ordertxid).toBe('OTXID3');
-      expect(result.results.every((trade) => trade.type === 'sell')).toBe(true);
     });
   });
 });
