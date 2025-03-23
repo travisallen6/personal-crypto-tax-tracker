@@ -1,5 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { ChainEventDB } from '../types/chain-event';
+import { CryptoPrice } from '../../crypto-price/entities/crypto-price.entity';
 @Entity()
 @Index(
   'chain_event_unique_id',
@@ -65,4 +73,8 @@ export class ChainEvent implements ChainEventDB {
 
   @Column({ type: 'bigint', nullable: false })
   confirmations: number;
+
+  @ManyToOne(() => CryptoPrice, (cryptoPrice) => cryptoPrice.id)
+  @JoinColumn({ name: 'cryptoPriceId' })
+  cryptoPrice: CryptoPrice;
 }

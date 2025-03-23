@@ -9,6 +9,8 @@ import { ExchangeEventModule } from './exchange-event/exchange-event.module';
 import { APP_PIPE } from '@nestjs/core';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { ExchangeEvent } from './exchange-event/entities/exchange-event.entity';
+import { CryptoPrice } from './crypto-price/entities/crypto-price.entity';
+import { CryptoPriceModule } from './crypto-price/crypto-price.module';
 
 @Module({
   imports: [
@@ -19,6 +21,7 @@ import { ExchangeEvent } from './exchange-event/entities/exchange-event.entity';
     LoggerModule,
     ChainEventModule,
     ExchangeEventModule,
+    CryptoPriceModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -31,7 +34,7 @@ import { ExchangeEvent } from './exchange-event/entities/exchange-event.entity';
           username: dbConfig.username,
           password: dbConfig.password,
           database: dbConfig.name,
-          entities: [ChainEvent, ExchangeEvent],
+          entities: [ChainEvent, ExchangeEvent, CryptoPrice],
           synchronize: dbConfig.autoSync,
         };
       },

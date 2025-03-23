@@ -1,10 +1,11 @@
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { CreateChainEventDto } from './dto/create-chain-event.dto';
 import { UpdateChainEventDto } from './dto/update-chain-event.dto';
 import { ChainEvent } from './entities/chain-event.entity';
 import { ChainEventSchema } from './dto/chain-event.schema';
+import { ChainEventIdWithCryptoPriceId } from './types/chain-event';
 @Injectable()
 export class ChainEventService {
   constructor(
@@ -57,5 +58,39 @@ export class ChainEventService {
     });
 
     return chainEvent?.blockNumber || 0;
+  }
+
+  async findChainEventsMissingCryptoPrice(): Promise<ChainEvent[]> {
+    return this.chainEventRepository.find({
+      select: {
+        id: true,
+        tokenSymbol: true,
+        timeStamp: true,
+        cryptoPrice: {
+          id: true,
+        },
+      },
+      where: { cryptoPrice: IsNull() },
+    });
+  }
+
+  async updateChainEventsWithCryptoPrice(
+    chainEventIdsWithCryptoPriceIds: ChainEventIdWithCryptoPriceId[],
+  ) {
+    if (chainEventIdsWithCryptoPriceIds.length === 0) {
+      return [];
+    }
+
+    // Execute a batch update by creating individual updates and running them in a single transaction
+    return this.chainEventRepository.manager.transaction(async (manager) => {
+      const promises = chainEventIdsWithCryptoPriceIds.map(
+        ({ id, cryptoPriceId }) =>
+          manager.update(ChainEvent, id, {
+            cryptoPrice: { id: cryptoPriceId },
+          }),
+      );
+
+      return Promise.all(promises);
+    });
   }
 }

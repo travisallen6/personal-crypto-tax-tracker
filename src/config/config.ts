@@ -23,6 +23,11 @@ export interface KrakenConfig {
   baseUrl: string;
 }
 
+export interface CoinGeckoConfig {
+  timestampRangeInterval: number;
+  coinIdMap: Record<string, string>;
+}
+
 class Config {
   private defaultReadEnvOptions: ReadEnvVariableOptions = {
     required: false,
@@ -69,6 +74,15 @@ class Config {
       required: true,
       default: 'https://api.kraken.com',
     }),
+  };
+
+  public readonly coinGecko: CoinGeckoConfig = {
+    timestampRangeInterval: 24 * 60 * 60 * 1000,
+    coinIdMap: {
+      ETH: 'ethereum',
+      BTC: 'bitcoin',
+      GALA: 'gala',
+    },
   };
 }
 
