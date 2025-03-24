@@ -3,7 +3,15 @@ import { ExchangeEvent } from './exchange-event';
 export interface KrakenTradeTransaction
   extends Omit<
     ExchangeEvent,
-    'time' | 'price' | 'cost' | 'fee' | 'vol' | 'margin' | 'leverage'
+    | 'time'
+    | 'price'
+    | 'cost'
+    | 'fee'
+    | 'vol'
+    | 'margin'
+    | 'leverage'
+    | 'baseCurrency'
+    | 'quoteCurrency'
   > {
   time: number;
   price: string;

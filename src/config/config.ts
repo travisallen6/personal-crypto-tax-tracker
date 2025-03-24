@@ -21,6 +21,10 @@ export interface KrakenConfig {
   apiKey: string;
   apiSecret: string;
   baseUrl: string;
+  pairToBaseQuoteCurrencyMap: Map<
+    string,
+    { baseCurrency: string; quoteCurrency: string }
+  >;
 }
 
 export interface CoinGeckoConfig {
@@ -31,6 +35,7 @@ export interface CoinGeckoConfig {
 
 export interface ChainEventConfig {
   earliestBlockNumber: number;
+  allowedTokenSymbols: string[];
 }
 
 class Config {
@@ -79,6 +84,11 @@ class Config {
       required: true,
       default: 'https://api.kraken.com',
     }),
+    pairToBaseQuoteCurrencyMap: new Map([
+      ['XETHZUSD', { baseCurrency: 'ETH', quoteCurrency: 'USD' }],
+      ['USDCUSD', { baseCurrency: 'USDC', quoteCurrency: 'USD' }],
+      ['GALAUSD', { baseCurrency: 'GALA', quoteCurrency: 'USD' }],
+    ]),
   };
 
   public readonly coinGecko: CoinGeckoConfig = {
@@ -93,6 +103,7 @@ class Config {
 
   public readonly chainEvent: ChainEventConfig = {
     earliestBlockNumber: 18908895,
+    allowedTokenSymbols: ['GALA', 'ETH', 'BTC', 'USDC', 'USDT'],
   };
 }
 

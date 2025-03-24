@@ -12,8 +12,7 @@ const EthereumTransactionHashSchema = z
 
 const StringifiedNumberSchema = z.string().regex(/^[0-9]+$/);
 
-export const ChainEventDBSchema = z.object({
-  id: z.number().int().positive(),
+export const ChainEventSchema = z.object({
   blockNumber: z.number().int().positive(),
   timeStamp: z.date(),
   transactionHash: EthereumTransactionHashSchema,
@@ -35,4 +34,7 @@ export const ChainEventDBSchema = z.object({
   cryptoPriceId: z.number().int().positive().optional(),
 });
 
-export const ChainEventSchema = ChainEventDBSchema.omit({ id: true });
+export const ChainEventDBSchema = ChainEventSchema.extend({
+  id: z.number().int().positive(),
+  usdValue: z.number().positive().optional(),
+});

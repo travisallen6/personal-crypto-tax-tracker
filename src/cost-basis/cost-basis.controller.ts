@@ -15,7 +15,6 @@ import { UpdateCostBasisDto } from './dto/update-cost-basis.dto';
 @Controller('cost-basis')
 export class CostBasisController {
   constructor(private readonly costBasisService: CostBasisService) {}
-
   @Post()
   create(@Body() createCostBasisDto: CreateCostBasisDto) {
     return this.costBasisService.create(createCostBasisDto);

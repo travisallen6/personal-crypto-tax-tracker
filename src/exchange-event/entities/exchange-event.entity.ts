@@ -13,6 +13,12 @@ export class ExchangeEvent implements ExchangeEventDB {
   @Column({ type: 'varchar', length: 20, nullable: false })
   pair: string;
 
+  @Column({ type: 'varchar', length: 20, nullable: false })
+  baseCurrency: string;
+
+  @Column({ type: 'varchar', length: 20, nullable: false })
+  quoteCurrency: string;
+
   @Column({ type: 'timestamptz', nullable: false })
   time: Date;
 

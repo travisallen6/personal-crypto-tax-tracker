@@ -13,9 +13,6 @@ import { CostBasisDB } from '../types/cost-basis';
 
 export enum CostBasisMethod {
   FIFO = 'fifo', // First In, First Out
-  LIFO = 'lifo', // Last In, First Out
-  HIFO = 'hifo', // Highest In, First Out
-  AVERAGE = 'average', // Average Cost
 }
 
 @Entity()

@@ -20,14 +20,12 @@ interface KrakenResponse<T> {
 export class KrakenService {
   private readonly logger = new Logger(KrakenService.name);
   private client: AxiosInstance;
-  private apiKey: string;
-  private apiSecret: string;
+
+  private krakenConfig: KrakenConfig;
 
   constructor(configService: ConfigService) {
-    const krakenConfig = configService.getOrThrow<KrakenConfig>('kraken');
-    this.apiKey = krakenConfig.apiKey;
-    this.apiSecret = krakenConfig.apiSecret;
-    this.buildAxiosClient(krakenConfig.baseUrl);
+    this.krakenConfig = configService.getOrThrow<KrakenConfig>('kraken');
+    this.buildAxiosClient(this.krakenConfig.baseUrl);
   }
 
   private buildAxiosClient(baseUrl: string) {
@@ -46,7 +44,7 @@ export class KrakenService {
     postData: string,
   ): string {
     const message = postData;
-    const secret = Buffer.from(this.apiSecret, 'base64');
+    const secret = Buffer.from(this.krakenConfig.apiSecret, 'base64');
 
     const hash = crypto.createHash('sha256');
     const hmac = crypto.createHmac('sha512', secret);
@@ -77,7 +75,7 @@ export class KrakenService {
         postData,
         {
           headers: {
-            'API-Key': this.apiKey,
+            'API-Key': this.krakenConfig.apiKey,
             'API-Sign': this.getMessageSignature(path, nonce, postData),
           },
         },
@@ -107,17 +105,34 @@ export class KrakenService {
   private convertTradeTransactionRawToTradeTransaction(
     rawTradeDictionary: KrakenTradeTransactionDictionary,
   ): ExchangeEvent[] {
-    return Object.entries(rawTradeDictionary).map(([txid, rawTrade]) => ({
-      ...rawTrade,
-      txid,
-      time: new Date(rawTrade.time * 1000),
-      price: parseFloat(rawTrade.price),
-      cost: parseFloat(rawTrade.cost),
-      fee: parseFloat(rawTrade.fee),
-      vol: parseFloat(rawTrade.vol),
-      margin: parseFloat(rawTrade.margin),
-      leverage: parseFloat(rawTrade.leverage),
-    }));
+    return Object.entries(rawTradeDictionary).map(
+      ([txid, rawTrade]): ExchangeEvent => {
+        const baseQuoteCurrency =
+          this.krakenConfig.pairToBaseQuoteCurrencyMap.get(rawTrade.pair);
+        if (!baseQuoteCurrency) {
+          this.logger.error(
+            `No base and quote currency found for pair: ${rawTrade.pair}`,
+          );
+          throw new Error(
+            `No base and quote currency found for pair: ${rawTrade.pair}`,
+          );
+        }
+        const { baseCurrency, quoteCurrency } = baseQuoteCurrency;
+        return {
+          ...rawTrade,
+          txid,
+          time: new Date(rawTrade.time * 1000),
+          price: parseFloat(rawTrade.price),
+          cost: parseFloat(rawTrade.cost),
+          fee: parseFloat(rawTrade.fee),
+          vol: parseFloat(rawTrade.vol),
+          margin: parseFloat(rawTrade.margin),
+          leverage: parseFloat(rawTrade.leverage),
+          baseCurrency,
+          quoteCurrency,
+        };
+      },
+    );
   }
 
   /**

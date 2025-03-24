@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { ChainEventDB } from '../types/chain-event';
 import { CryptoPrice } from '../../crypto-price/entities/crypto-price.entity';
+
 @Entity()
 @Index(
   'chain_event_unique_id',
