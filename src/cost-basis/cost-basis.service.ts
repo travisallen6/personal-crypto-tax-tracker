@@ -5,6 +5,8 @@ import { CostBasis } from './entities/cost-basis.entity';
 import { CreateCostBasisDto } from './dto/create-cost-basis.dto';
 import { UpdateCostBasisDto } from './dto/update-cost-basis.dto';
 
+type WithoutTimestamps<T> = Omit<T, 'createdAt' | 'updatedAt'>;
+
 @Injectable()
 export class CostBasisService {
   constructor(
@@ -12,9 +14,13 @@ export class CostBasisService {
     private costBasisRepository: Repository<CostBasis>,
   ) {}
 
-  async create(createCostBasisDto: CreateCostBasisDto): Promise<CostBasis> {
+  async create(
+    createCostBasisDto: WithoutTimestamps<CreateCostBasisDto>,
+  ): Promise<CostBasis> {
     const costBasis = this.costBasisRepository.create(createCostBasisDto);
-    return this.costBasisRepository.save(costBasis);
+    const result = await this.costBasisRepository.save(costBasis);
+
+    return result;
   }
 
   async findAll(): Promise<CostBasis[]> {

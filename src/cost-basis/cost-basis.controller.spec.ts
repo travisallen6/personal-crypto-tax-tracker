@@ -43,18 +43,11 @@ describe('CostBasisController', () => {
         {
           id: 1,
           quantity: 100,
-          costBasisUSD: 5000,
-          acquisitionChainEvent: null,
           acquisitionChainEventId: null,
-          acquisitionExchangeEvent: null,
           acquisitionExchangeEventId: null,
-          disposalChainEvent: null,
           disposalChainEventId: null,
-          disposalExchangeEvent: null,
           disposalExchangeEventId: null,
           method: CostBasisMethod.FIFO,
-          proceedsUSD: null,
-          remainingQuantity: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -71,18 +64,11 @@ describe('CostBasisController', () => {
       const result: Partial<CostBasis> = {
         id: 1,
         quantity: 100,
-        costBasisUSD: 5000,
-        acquisitionChainEvent: null,
         acquisitionChainEventId: null,
-        acquisitionExchangeEvent: null,
         acquisitionExchangeEventId: null,
-        disposalChainEvent: null,
         disposalChainEventId: null,
-        disposalExchangeEvent: null,
         disposalExchangeEventId: null,
         method: CostBasisMethod.FIFO,
-        proceedsUSD: null,
-        remainingQuantity: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -97,14 +83,11 @@ describe('CostBasisController', () => {
     it('should create a cost basis record', async () => {
       const createDto: CreateCostBasisDto = {
         quantity: 100,
-        costBasisUSD: 5000,
         method: CostBasisMethod.FIFO,
         acquisitionChainEventId: 1,
         disposalChainEventId: 2,
         acquisitionExchangeEventId: 3,
         disposalExchangeEventId: 4,
-        proceedsUSD: 6000,
-        remainingQuantity: 50,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -112,14 +95,8 @@ describe('CostBasisController', () => {
       const result: Partial<CostBasis> = {
         id: 1,
         ...createDto,
-        acquisitionChainEvent: null,
-        acquisitionExchangeEvent: null,
         acquisitionExchangeEventId: null,
-        disposalChainEvent: null,
-        disposalExchangeEvent: null,
         disposalExchangeEventId: null,
-        proceedsUSD: null,
-        remainingQuantity: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -134,23 +111,16 @@ describe('CostBasisController', () => {
     it('should update a cost basis record', async () => {
       const updateDto: UpdateCostBasisDto = {
         quantity: 150,
-        costBasisUSD: 7500,
       };
 
       const result: Partial<CostBasis> = {
         id: 1,
         ...updateDto,
-        acquisitionChainEvent: null,
         acquisitionChainEventId: null,
-        acquisitionExchangeEvent: null,
         acquisitionExchangeEventId: null,
-        disposalChainEvent: null,
         disposalChainEventId: null,
-        disposalExchangeEvent: null,
         disposalExchangeEventId: null,
         method: CostBasisMethod.FIFO,
-        proceedsUSD: null,
-        remainingQuantity: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -166,18 +136,11 @@ describe('CostBasisController', () => {
       jest.spyOn(service, 'findOne').mockResolvedValue({
         id: 1,
         quantity: 100,
-        costBasisUSD: 5000,
         method: CostBasisMethod.FIFO,
         acquisitionChainEventId: 1,
         disposalChainEventId: 2,
-        acquisitionChainEvent: null,
-        acquisitionExchangeEvent: null,
         acquisitionExchangeEventId: null,
-        disposalChainEvent: null,
-        disposalExchangeEvent: null,
         disposalExchangeEventId: null,
-        proceedsUSD: null,
-        remainingQuantity: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       });

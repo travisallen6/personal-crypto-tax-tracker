@@ -5,6 +5,7 @@ import { ExchangeEvent } from './entities/exchange-event.entity';
 import { CreateExchangeEventDto } from './dto/create-exchange-event';
 import { UpdateExchangeEventDto } from './dto/update-exchange-event';
 import { ExchangeEventSchema } from './dto/exchange-event.schema';
+import { ExchangeEventDB } from './types/exchange-event';
 
 @Injectable()
 export class ExchangeEventService {
@@ -57,5 +58,89 @@ export class ExchangeEventService {
     });
 
     return result?.time?.getTime?.() || 0;
+  }
+
+  private async getDisposalExchangeEventsWithCostBasis(
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ExchangeEventDB[]> {
+    const exchangeEvents = await this.exchangeEventRepository.find({
+      where: {
+        type: 'sell',
+      },
+      relations: [
+        'disposalCostBasis',
+        'disposalCostBasis.acquisitionChainEvent',
+        'disposalCostBasis.acquisitionExchangeEvent',
+      ],
+      order: {
+        time: sortOrder,
+      },
+    });
+
+    return exchangeEvents;
+  }
+
+  private async getAcquisitionExchangeEventsWithCostBasis(
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ExchangeEventDB[]> {
+    const exchangeEvents = await this.exchangeEventRepository.find({
+      where: {
+        type: 'buy',
+      },
+      relations: [
+        'acquisitionCostBasis',
+        'acquisitionCostBasis.disposalExchangeEvent',
+        'acquisitionCostBasis.disposalChainEvent',
+      ],
+      order: {
+        time: sortOrder,
+      },
+    });
+
+    return exchangeEvents;
+  }
+
+  public async getLinkedDisposalExchangeEvents(
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ExchangeEventDB[]> {
+    const disposalExchangeEvents =
+      await this.getDisposalExchangeEventsWithCostBasis(sortOrder);
+
+    return disposalExchangeEvents.filter(
+      (event) => (event.disposalCostBasis?.length ?? 0) > 0,
+    );
+  }
+
+  public async getUnlinkedDisposalExchangeEvents(
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ExchangeEventDB[]> {
+    const disposalExchangeEvents =
+      await this.getDisposalExchangeEventsWithCostBasis(sortOrder);
+
+    return disposalExchangeEvents.filter(
+      (event) => (event.disposalCostBasis?.length ?? 0) === 0,
+    );
+  }
+
+  public async getLinkedAcquisitionExchangeEvents(
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ExchangeEventDB[]> {
+    const acquisitionExchangeEvents =
+      await this.getAcquisitionExchangeEventsWithCostBasis(sortOrder);
+
+    return acquisitionExchangeEvents.filter(
+      (event) => (event.acquisitionCostBasis?.length ?? 0) > 0,
+    );
+  }
+
+  public async getUnlinkedAcquisitionExchangeEvents(
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ExchangeEventDB[]> {
+    const acquisitionExchangeEvents =
+      await this.getAcquisitionExchangeEventsWithCostBasis(sortOrder);
+
+    return acquisitionExchangeEvents.filter(
+      (event) => (event.acquisitionCostBasis?.length ?? 0) === 0,
+    );
   }
 }

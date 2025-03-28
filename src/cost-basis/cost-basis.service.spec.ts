@@ -46,12 +46,9 @@ describe('CostBasisService', () => {
       const createDto: CreateCostBasisDto = {
         acquisitionChainEventId: 1,
         quantity: 1,
-        costBasisUSD: 50000,
         method: CostBasisMethod.FIFO,
         acquisitionExchangeEventId: 3,
         disposalExchangeEventId: 4,
-        proceedsUSD: 6000,
-        remainingQuantity: 50,
         disposalChainEventId: 2,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -95,10 +92,7 @@ describe('CostBasisService', () => {
           disposalExchangeEventId: null,
           assetSymbol: 'BTC',
           quantity: 1,
-          costBasisUSD: 50000,
-          proceedsUSD: null,
           method: CostBasisMethod.FIFO,
-          remainingQuantity: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -114,10 +108,7 @@ describe('CostBasisService', () => {
           disposalExchangeEventId: null,
           assetSymbol: 'ETH',
           quantity: 10,
-          costBasisUSD: 30000,
-          proceedsUSD: null,
           method: CostBasisMethod.FIFO,
-          remainingQuantity: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -148,19 +139,12 @@ describe('CostBasisService', () => {
       const costBasis = {
         id,
         acquisitionChainEventId: 1,
-        acquisitionChainEvent: null,
-        acquisitionExchangeEvent: null,
         acquisitionExchangeEventId: null,
-        disposalChainEvent: null,
         disposalChainEventId: null,
-        disposalExchangeEvent: null,
         disposalExchangeEventId: null,
         assetSymbol: 'BTC',
         quantity: 1,
-        costBasisUSD: 50000,
-        proceedsUSD: null,
         method: CostBasisMethod.FIFO,
-        remainingQuantity: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       } as CostBasis;
@@ -211,7 +195,6 @@ describe('CostBasisService', () => {
       const id = 1;
       const updateDto: UpdateCostBasisDto = {
         disposalChainEventId: 2,
-        proceedsUSD: 55000,
       };
 
       const updatedCostBasis: CostBasisDB = {
@@ -220,10 +203,7 @@ describe('CostBasisService', () => {
         disposalChainEventId: 2,
         disposalExchangeEventId: 4,
         quantity: 1,
-        costBasisUSD: 50000,
-        proceedsUSD: 55000,
         method: CostBasisMethod.FIFO,
-        remainingQuantity: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         acquisitionExchangeEventId: 3,
@@ -247,9 +227,7 @@ describe('CostBasisService', () => {
     it('should return null if the record to update is not found', async () => {
       // Arrange
       const id = 999;
-      const updateDto: UpdateCostBasisDto = {
-        proceedsUSD: 55000,
-      };
+      const updateDto: UpdateCostBasisDto = {};
 
       mockCostBasisRepository.update.mockResolvedValue({ affected: 0 });
       mockCostBasisRepository.findOne.mockResolvedValue(null);

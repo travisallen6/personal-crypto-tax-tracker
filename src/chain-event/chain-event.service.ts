@@ -5,7 +5,10 @@ import { CreateChainEventDto } from './dto/create-chain-event.dto';
 import { UpdateChainEventDto } from './dto/update-chain-event.dto';
 import { ChainEvent } from './entities/chain-event.entity';
 import { ChainEventSchema } from './dto/chain-event.schema';
-import { ChainEventIdWithCryptoPriceId } from './types/chain-event';
+import {
+  ChainEventDB,
+  ChainEventIdWithCryptoPriceId,
+} from './types/chain-event';
 import { ConfigService } from '@nestjs/config';
 import { ChainEventConfig } from '../config/config';
 
@@ -104,5 +107,83 @@ export class ChainEventService {
 
       return Promise.all(promises);
     });
+  }
+
+  private async getDisposalChainEventsWithCostBasis(
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ChainEventDB[]> {
+    const chainEvents = await this.chainEventRepository.find({
+      relations: [
+        'disposalCostBasis',
+        'disposalCostBasis.acquisitionChainEvent',
+        'disposalCostBasis.acquisitionExchangeEvent',
+      ],
+      order: {
+        timeStamp: sortOrder,
+      },
+    });
+
+    return chainEvents;
+  }
+
+  private async getAcquisitionChainEventsWithCostBasis(
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ChainEventDB[]> {
+    const chainEvents = await this.chainEventRepository.find({
+      relations: [
+        'acquisitionCostBasis',
+        'acquisitionCostBasis.disposalExchangeEvent',
+        'acquisitionCostBasis.disposalChainEvent',
+      ],
+      order: {
+        timeStamp: sortOrder,
+      },
+    });
+
+    return chainEvents;
+  }
+
+  public async getLinkedDisposalChainEvents(
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ChainEventDB[]> {
+    const disposalChainEvents =
+      await this.getDisposalChainEventsWithCostBasis(sortOrder);
+
+    return disposalChainEvents.filter(
+      (event) => (event.acquisitionCostBasis?.length ?? 0) > 0,
+    );
+  }
+
+  public async getUnlinkedDisposalChainEvents(
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ChainEventDB[]> {
+    const disposalChainEvents =
+      await this.getDisposalChainEventsWithCostBasis(sortOrder);
+
+    return disposalChainEvents.filter(
+      (event) => (event.acquisitionCostBasis?.length ?? 0) === 0,
+    );
+  }
+
+  public async getLinkedAcquisitionChainEvents(
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ChainEventDB[]> {
+    const acquisitionChainEvents =
+      await this.getAcquisitionChainEventsWithCostBasis(sortOrder);
+
+    return acquisitionChainEvents.filter(
+      (event) => (event.disposalCostBasis?.length ?? 0) > 0,
+    );
+  }
+
+  public async getUnlinkedAcquisitionChainEvents(
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ChainEventDB[]> {
+    const acquisitionChainEvents =
+      await this.getAcquisitionChainEventsWithCostBasis(sortOrder);
+
+    return acquisitionChainEvents.filter(
+      (event) => (event.disposalCostBasis?.length ?? 0) === 0,
+    );
   }
 }

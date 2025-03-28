@@ -1,5 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  Index,
+  OneToMany,
+} from 'typeorm';
 import { ExchangeEvent as ExchangeEventDB } from '../types/exchange-event';
+import { CostBasis } from '../../cost-basis/entities/cost-basis.entity';
 
 @Entity()
 export class ExchangeEvent implements ExchangeEventDB {
@@ -72,4 +79,11 @@ export class ExchangeEvent implements ExchangeEventDB {
 
   @Column({ type: 'simple-array', nullable: true })
   trades?: string[];
+
+  // Add OneToMany relations for costBasis
+  @OneToMany(() => CostBasis, (costBasis) => costBasis.acquisitionExchangeEvent)
+  acquisitionCostBasis: CostBasis[];
+
+  @OneToMany(() => CostBasis, (costBasis) => costBasis.disposalExchangeEvent)
+  disposalCostBasis: CostBasis[];
 }

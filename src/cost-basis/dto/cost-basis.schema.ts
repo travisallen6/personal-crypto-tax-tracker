@@ -12,12 +12,9 @@ export const CostBasisSchema = z.object({
 
   // Quantity and financial details
   quantity: z.number().positive(),
-  costBasisUSD: z.number().nonnegative(),
-  proceedsUSD: z.number().nullable(),
 
   // Method and status
   method: z.nativeEnum(CostBasisMethod),
-  remainingQuantity: z.number().nullable(),
 
   // Timestamps
   createdAt: z.date(),

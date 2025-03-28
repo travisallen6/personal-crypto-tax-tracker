@@ -10,6 +10,8 @@ import {
 import { ChainEvent } from '../../chain-event/entities/chain-event.entity';
 import { ExchangeEvent } from '../../exchange-event/entities/exchange-event.entity';
 import { CostBasisDB } from '../types/cost-basis';
+import { ChainEventDB } from '../../chain-event/types/chain-event';
+import { ExchangeEventDB } from '../../exchange-event/types/exchange-event';
 
 export enum CostBasisMethod {
   FIFO = 'fifo', // First In, First Out
@@ -21,44 +23,55 @@ export class CostBasis implements CostBasisDB {
   id: number;
 
   // The acquisition transaction (buying/receiving event)
-  @ManyToOne(() => ChainEvent, { nullable: true })
+  @ManyToOne(
+    () => ChainEvent,
+    (chainEvent) => chainEvent.acquisitionCostBasis,
+    {
+      nullable: true,
+    },
+  )
   @JoinColumn({ name: 'acquisitionChainEventId' })
-  acquisitionChainEvent: ChainEvent | null;
+  acquisitionChainEvent?: ChainEventDB;
 
   @Column({ nullable: true })
   acquisitionChainEventId: number | null;
 
-  @ManyToOne(() => ExchangeEvent, { nullable: true })
+  @ManyToOne(
+    () => ExchangeEvent,
+    (exchangeEvent) => exchangeEvent.acquisitionCostBasis,
+    {
+      nullable: true,
+    },
+  )
   @JoinColumn({ name: 'acquisitionExchangeEventId' })
-  acquisitionExchangeEvent: ExchangeEvent | null;
+  acquisitionExchangeEvent?: ExchangeEventDB;
 
   @Column({ nullable: true })
   acquisitionExchangeEventId: number | null;
 
   // The disposal transaction (selling/spending event)
-  @ManyToOne(() => ChainEvent, { nullable: true })
+  @ManyToOne(() => ChainEvent, (chainEvent) => chainEvent.disposalCostBasis, {
+    nullable: true,
+  })
   @JoinColumn({ name: 'disposalChainEventId' })
-  disposalChainEvent: ChainEvent | null;
+  disposalChainEvent?: ChainEventDB;
 
   @Column({ nullable: true })
   disposalChainEventId: number | null;
 
-  @ManyToOne(() => ExchangeEvent, { nullable: true })
+  @ManyToOne(
+    () => ExchangeEvent,
+    (exchangeEvent) => exchangeEvent.disposalCostBasis,
+    { nullable: true },
+  )
   @JoinColumn({ name: 'disposalExchangeEventId' })
-  disposalExchangeEvent: ExchangeEvent | null;
+  disposalExchangeEvent?: ExchangeEventDB;
 
   @Column({ nullable: true })
   disposalExchangeEventId: number | null;
 
   @Column({ type: 'decimal', precision: 20, scale: 8, nullable: false })
   quantity: number;
-
-  // Cost basis details
-  @Column({ type: 'decimal', precision: 20, scale: 8, nullable: false })
-  costBasisUSD: number;
-
-  @Column({ type: 'decimal', precision: 20, scale: 8, nullable: true })
-  proceedsUSD: number | null;
 
   @Column({
     type: 'enum',
@@ -67,10 +80,6 @@ export class CostBasis implements CostBasisDB {
     nullable: false,
   })
   method: CostBasisMethod;
-
-  // Track if this is fully or partially matched
-  @Column({ type: 'decimal', precision: 20, scale: 8, nullable: true })
-  remainingQuantity: number | null;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -1,3 +1,4 @@
+import { Decimal } from 'decimal.js';
 import { z } from 'zod';
 
 const EthereumAddressSchema = z
@@ -36,5 +37,5 @@ export const ChainEventSchema = z.object({
 
 export const ChainEventDBSchema = ChainEventSchema.extend({
   id: z.number().int().positive(),
-  usdValue: z.number().positive().optional(),
+  quantity: z.instanceof(Decimal),
 });
