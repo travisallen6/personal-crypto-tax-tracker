@@ -23,6 +23,15 @@ export class CostBasisService {
     return result;
   }
 
+  async createMany(
+    createCostBasisDtos: WithoutTimestamps<CreateCostBasisDto>[],
+  ): Promise<CostBasis[]> {
+    const costBasis = this.costBasisRepository.create(createCostBasisDtos);
+    const result = await this.costBasisRepository.save(costBasis);
+
+    return result;
+  }
+
   async findAll(): Promise<CostBasis[]> {
     return this.costBasisRepository.find({
       relations: [

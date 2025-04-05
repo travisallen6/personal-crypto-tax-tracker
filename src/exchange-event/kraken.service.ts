@@ -4,12 +4,7 @@ import axios, { AxiosInstance } from 'axios';
 import { Injectable, Logger } from '@nestjs/common';
 import * as crypto from 'crypto';
 import * as querystring from 'querystring';
-import { PaginatedExchangeResponse } from './types/exchange-event';
-import { ExchangeEvent } from './types/exchange-event';
-import {
-  KrakenTradeTransactionDictionary,
-  KrakenTradeTransactionResponse,
-} from './types/kraken-api-responses';
+import { KrakenLedgerResponse } from './types/kraken-api-responses';
 
 interface KrakenResponse<T> {
   error: string[];
@@ -98,75 +93,18 @@ export class KrakenService {
   }
 
   /**
-   * Convert a raw trade transaction to a trade transaction
-   * @param rawTradeDictionary The raw trade transaction dictionary from the Kraken API
-   * @returns The trade transaction array
-   */
-  private convertTradeTransactionRawToTradeTransaction(
-    rawTradeDictionary: KrakenTradeTransactionDictionary,
-  ): ExchangeEvent[] {
-    return Object.entries(rawTradeDictionary).map(
-      ([txid, rawTrade]): ExchangeEvent => {
-        const baseQuoteCurrency =
-          this.krakenConfig.pairToBaseQuoteCurrencyMap.get(rawTrade.pair);
-        if (!baseQuoteCurrency) {
-          this.logger.error(
-            `No base and quote currency found for pair: ${rawTrade.pair}`,
-          );
-          throw new Error(
-            `No base and quote currency found for pair: ${rawTrade.pair}`,
-          );
-        }
-        const { baseCurrency, quoteCurrency } = baseQuoteCurrency;
-        return {
-          ...rawTrade,
-          txid,
-          time: new Date(rawTrade.time * 1000),
-          price: parseFloat(rawTrade.price),
-          cost: parseFloat(rawTrade.cost),
-          fee: parseFloat(rawTrade.fee),
-          vol: parseFloat(rawTrade.vol),
-          margin: parseFloat(rawTrade.margin),
-          leverage: parseFloat(rawTrade.leverage),
-          baseCurrency,
-          quoteCurrency,
-        };
-      },
-    );
-  }
-
-  /**
-   * Apply pagination metadata to the result
-   * @param offset The offset of the result
-   * @param totalCount The total number of results
-   * @param result The result array
-   * @returns The paginated exchange response
-   */
-  private applyPaginationMetadata<T>(
-    offset: number,
-    totalCount: number,
-    results: T[],
-  ): PaginatedExchangeResponse<T[]> {
-    return {
-      currentOffset: offset,
-      totalResultsCount: totalCount,
-      results,
-    };
-  }
-
-  /**
-   * Get closed trades from Kraken
+   * Fetches ledger entries from Kraken
    * @param start Optional UNIX timestamp to start from
    * @param end Optional UNIX timestamp to end at
    * @param offset Result offset for pagination
-   * @returns Array of trade transactions
+   * @returns Paginated ledger entries
    */
-  public async getClosedTrades(
+  public async getLedgers(
     start?: number,
     end?: number,
     offset?: number,
-  ): Promise<PaginatedExchangeResponse<ExchangeEvent[]>> {
-    const params: Record<string, number> = {};
+  ): Promise<KrakenLedgerResponse> {
+    const params: Record<string, any> = {};
 
     if (start) {
       params.start = start;
@@ -180,29 +118,17 @@ export class KrakenService {
       params.ofs = offset || 0;
     }
 
-    this.logger.log(
-      `Getting closed trades from Kraken: ${JSON.stringify(params)}`,
-    );
+    this.logger.log(`Getting ledgers from Kraken: ${JSON.stringify(params)}`);
 
-    const response = await this.sendRequest<KrakenTradeTransactionResponse>(
-      '0/private/TradesHistory',
+    const response = await this.sendRequest<KrakenLedgerResponse>(
+      '0/private/Ledgers',
       params,
     );
 
-    const currentResultCount = Object.keys(response.result.trades).length;
-
     this.logger.log(
-      `Kraken response: ${params.ofs + currentResultCount}/${response.result.count} total results`,
+      `Kraken ledgers response: ${Object.keys(response.result.ledger || {}).length} entries`,
     );
 
-    const tradeTransactions = this.convertTradeTransactionRawToTradeTransaction(
-      response.result.trades,
-    );
-
-    return this.applyPaginationMetadata(
-      offset || 0,
-      response.result.count,
-      tradeTransactions,
-    );
+    return response.result;
   }
 }

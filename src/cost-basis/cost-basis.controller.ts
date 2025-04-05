@@ -11,10 +11,14 @@ import {
 import { CostBasisService } from './cost-basis.service';
 import { CreateCostBasisDto } from './dto/create-cost-basis.dto';
 import { UpdateCostBasisDto } from './dto/update-cost-basis.dto';
-
+import { CostBasisSyncService } from './cost-basis-sync.service';
 @Controller('cost-basis')
 export class CostBasisController {
-  constructor(private readonly costBasisService: CostBasisService) {}
+  constructor(
+    private readonly costBasisService: CostBasisService,
+    private readonly costBasisSyncService: CostBasisSyncService,
+  ) {}
+
   @Post()
   create(@Body() createCostBasisDto: CreateCostBasisDto) {
     return this.costBasisService.create(createCostBasisDto);
@@ -54,5 +58,10 @@ export class CostBasisController {
     }
     await this.costBasisService.remove(+id);
     return { success: true };
+  }
+
+  @Post('sync')
+  async syncCostBasis(@Body() body: { userAddresses: string[] }) {
+    return this.costBasisSyncService.syncCostBasis(body.userAddresses);
   }
 }

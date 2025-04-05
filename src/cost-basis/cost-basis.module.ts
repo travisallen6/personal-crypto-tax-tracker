@@ -6,12 +6,14 @@ import { CostBasis } from './entities/cost-basis.entity';
 import { CostBasisSyncService } from './cost-basis-sync.service';
 import { ExchangeEventModule } from '../exchange-event/exchange-event.module';
 import { ChainEventModule } from '../chain-event/chain-event.module';
+import { CostBasisEventModule } from '../cost-basis-event/cost-basis-event.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([CostBasis]),
     ExchangeEventModule,
     ChainEventModule,
+    CostBasisEventModule,
   ],
   controllers: [CostBasisController],
   providers: [CostBasisService, CostBasisSyncService],

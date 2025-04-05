@@ -17,6 +17,8 @@ interface CostBasisLinkResult {
 export class DisposalEvent {
   public id: number;
   public quantity: Decimal;
+  public baseFee: Decimal;
+  public quoteFee: Decimal;
   public currency: string;
   private protectedUnaccountedCostBasisQuantity: Decimal;
   public timestamp: Date;
@@ -51,6 +53,8 @@ export class DisposalEvent {
     this.quantity = event.quantity;
     this.currency = event.tokenSymbol;
     this.timestamp = event.timeStamp;
+    this.baseFee = new Decimal(0);
+    this.quoteFee = new Decimal(0);
     this.protectedUnaccountedCostBasisQuantity =
       this.getUnaccountedCostBasisQuantity();
   }
@@ -61,6 +65,8 @@ export class DisposalEvent {
     this.quantity = new Decimal(event.vol);
     this.currency = event.baseCurrency;
     this.timestamp = event.time;
+    this.baseFee = new Decimal(event.baseFee);
+    this.quoteFee = new Decimal(event.quoteFee);
     this.protectedUnaccountedCostBasisQuantity =
       this.getUnaccountedCostBasisQuantity();
   }
@@ -68,7 +74,7 @@ export class DisposalEvent {
   private getUnaccountedCostBasisQuantity() {
     return (this.event.acquisitionCostBasis || []).reduce((acc, curr) => {
       return acc.plus(curr.quantity);
-    }, this.quantity);
+    }, this.quantity.add(this.baseFee));
   }
 
   private get disposalIdProperty(): keyof CostBasis {

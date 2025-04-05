@@ -27,7 +27,24 @@ export type KrakenTradeTransactionDictionary = Record<
   Omit<KrakenTradeTransaction, 'txid'>
 >;
 
+export interface KrakenLedgerEntry {
+  aclass: string;
+  amount: string;
+  asset: string;
+  balance: string;
+  fee: string;
+  refid: string;
+  subtype: string;
+  time: number;
+  type: string;
+}
+
 export interface KrakenTradeTransactionResponse {
   count: number;
   trades: KrakenTradeTransactionDictionary;
+}
+
+export interface KrakenLedgerResponse {
+  count: number;
+  ledger: Record<string, KrakenLedgerEntry>;
 }

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ChainEventService } from '../chain-event/chain-event.service';
 import { ExchangeEventService } from '../exchange-event/exchange-event.service';
 import { DisposalEvent } from './disposal-event';
+import { Decimal } from 'decimal.js';
 
 @Injectable()
 export class DisposalEventService {
@@ -21,10 +22,43 @@ export class DisposalEventService {
     });
   }
 
-  async getLinkedDisposalEvents(sortOrder: 'ASC' | 'DESC' = 'ASC') {
+  async getUnlinkedTotalQuantityByCurrency(
+    userAddresses: string[],
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ) {
+    const unlinkedDisposalEvents = await this.getUnlinkedDisposalEvents(
+      userAddresses,
+      sortOrder,
+    );
+
+    const initialValue: Record<string, Decimal> = {};
+
+    return unlinkedDisposalEvents.reduce((acc, event) => {
+      const currencyTotal = acc[event.currency];
+      if (!currencyTotal) {
+        acc[event.currency] = event.unaccountedCostBasisQuantity;
+
+        return acc;
+      }
+
+      acc[event.currency] = currencyTotal.plus(
+        event.unaccountedCostBasisQuantity,
+      );
+
+      return acc;
+    }, initialValue);
+  }
+
+  async getLinkedDisposalEvents(
+    userAddresses: string[],
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ) {
     const disposalEvents = await Promise.all([
       this.exchangeEventService.getLinkedDisposalExchangeEvents(sortOrder),
-      this.chainEventService.getLinkedDisposalChainEvents(sortOrder),
+      this.chainEventService.getLinkedDisposalChainEvents(
+        userAddresses,
+        sortOrder,
+      ),
     ]);
 
     return this.sortEvents(
@@ -33,10 +67,16 @@ export class DisposalEventService {
     );
   }
 
-  async getUnlinkedDisposalEvents(sortOrder: 'ASC' | 'DESC' = 'ASC') {
+  async getUnlinkedDisposalEvents(
+    userAddresses: string[],
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ) {
     const unlinkedDisposalExchangeEvents = await Promise.all([
       this.exchangeEventService.getUnlinkedDisposalExchangeEvents(sortOrder),
-      this.chainEventService.getUnlinkedDisposalChainEvents(sortOrder),
+      this.chainEventService.getUnlinkedDisposalChainEvents(
+        userAddresses,
+        sortOrder,
+      ),
     ]);
 
     return this.sortEvents(

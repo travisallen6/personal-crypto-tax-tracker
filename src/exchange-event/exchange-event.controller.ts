@@ -101,7 +101,7 @@ export class ExchangeEventController {
   @Post('sync')
   async syncExchangeEvents() {
     this.logger.log('Syncing exchange events');
-    await this.exchangeEventSyncService.syncExchangeEvents();
+    await this.exchangeEventSyncService.syncLedgers();
     return { success: true, message: 'Exchange events sync completed' };
   }
 }

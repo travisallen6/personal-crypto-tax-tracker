@@ -8,7 +8,6 @@ const DecimalSchema = z.number().or(
     .regex(/^-?\d+(\.\d+)?$/)
     .transform(Number),
 );
-const OptionalStringSchema = z.string().max(100).optional();
 const OptionalStringArraySchema = z.array(z.string()).optional();
 
 // Main schema for use with database entities (includes ID)
@@ -19,28 +18,13 @@ export const ExchangeEventSchema = z.object({
   quoteCurrency: z.string().max(20),
   time: z.date(),
   type: z.enum(['buy', 'sell']),
-  ordertype: z.string().max(20),
   price: DecimalSchema,
   cost: DecimalSchema,
-  fee: DecimalSchema,
+  baseFee: DecimalSchema,
+  quoteFee: DecimalSchema,
+  withdrawalFee: DecimalSchema,
   vol: DecimalSchema,
-  margin: DecimalSchema,
-  leverage: DecimalSchema,
-  maker: z.boolean(),
-  trade_id: z.number().int(),
-  ordertxid: TransactionIdSchema,
-  misc: z.string().max(100),
-  aclass: z.string().max(50),
   ledgers: OptionalStringArraySchema,
-  postxid: OptionalStringSchema,
-  posstatus: OptionalStringSchema,
-  cprice: OptionalStringSchema,
-  ccost: OptionalStringSchema,
-  cfee: OptionalStringSchema,
-  cvol: OptionalStringSchema,
-  cmargin: OptionalStringSchema,
-  net: OptionalStringSchema,
-  trades: OptionalStringArraySchema,
 });
 
 // Schema without ID for creating new records
