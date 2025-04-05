@@ -14,6 +14,15 @@ export class ExchangeEventService {
     private readonly exchangeEventRepository: Repository<ExchangeEvent>,
   ) {}
 
+  private hydrateExchangeEvents(exchangeEvents: CreateExchangeEventDto[]) {
+    return exchangeEvents.map((exchangeEvent) => {
+      return {
+        ...exchangeEvent,
+        time: new Date(exchangeEvent.time),
+      };
+    });
+  }
+
   private validateExchangeEvents(exchangeEvents: CreateExchangeEventDto[]) {
     exchangeEvents.forEach((exchangeEvent) => {
       ExchangeEventSchema.parse(exchangeEvent);
@@ -25,12 +34,13 @@ export class ExchangeEventService {
   }
 
   public createMany(exchangeEvents: CreateExchangeEventDto[]) {
-    this.validateExchangeEvents(exchangeEvents);
+    const hydratedExchangeEvents = this.hydrateExchangeEvents(exchangeEvents);
+    this.validateExchangeEvents(hydratedExchangeEvents);
     return this.exchangeEventRepository.manager
       .createQueryBuilder()
       .insert()
       .into(ExchangeEvent)
-      .values(exchangeEvents)
+      .values(hydratedExchangeEvents)
       .orIgnore()
       .execute();
   }
