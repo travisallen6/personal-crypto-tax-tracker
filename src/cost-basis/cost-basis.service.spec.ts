@@ -50,8 +50,6 @@ describe('CostBasisService', () => {
         acquisitionExchangeEventId: 3,
         disposalExchangeEventId: 4,
         disposalChainEventId: 2,
-        createdAt: new Date(),
-        updatedAt: new Date(),
       };
 
       const newCostBasis = {

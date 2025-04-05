@@ -88,8 +88,6 @@ describe('CostBasisController', () => {
         disposalChainEventId: 2,
         acquisitionExchangeEventId: 3,
         disposalExchangeEventId: 4,
-        createdAt: new Date(),
-        updatedAt: new Date(),
       };
 
       const result: Partial<CostBasis> = {
