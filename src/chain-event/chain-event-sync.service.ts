@@ -8,6 +8,7 @@ import { EtherscanService } from './etherscan.service';
 import { ChainEventTransaction } from './types/chain-event-transaction';
 import { ChainEvent } from './types/chain-event';
 import { CryptoPriceSyncService } from '../crypto-price/crypto-price-sync.service';
+import Decimal from 'decimal.js';
 
 @Injectable()
 export class ChainEventSyncService {
@@ -131,6 +132,108 @@ export class ChainEventSyncService {
 
     this.logger.log(
       `Updated ${affectedCount} chain events with crypto price IDs`,
+    );
+  }
+
+  public async getChainEventsFromTransactionHashes(
+    transactionHashes: string[],
+    recipientAddress: string,
+  ): Promise<ChainEvent[]> {
+    const transactionHashSet = new Set(transactionHashes);
+
+    const transactions = await Promise.all(
+      transactionHashes.map((transactionHash) =>
+        this.etherscanService
+          .getTransaction(transactionHash)
+          .then((etherscanResponse) => etherscanResponse.result),
+      ),
+    );
+
+    const erc20Transfers = await Promise.all(
+      transactions.map(async (transaction) => {
+        const blockNumber = parseInt(transaction.blockNumber, 16);
+        const transfers = await this.etherscanService.getErc20Transfers(
+          recipientAddress,
+          blockNumber,
+          blockNumber,
+        );
+
+        return transfers.result;
+      }),
+    );
+
+    const targetErc20Transfers = erc20Transfers.flatMap((erc20Transfers) =>
+      erc20Transfers.filter((transfer) =>
+        transactionHashSet.has(transfer.hash),
+      ),
+    );
+
+    if (targetErc20Transfers.length !== transactionHashes.length) {
+      this.logger.error(
+        `Unable to find all target ERC20 transfers for transaction hashes ${transactionHashes.join(', ')}`,
+      );
+
+      throw new InternalServerErrorException(
+        `Unable to find all target ERC20 transfers for transaction hashes ${transactionHashes.join(', ')}`,
+      );
+    }
+
+    return this.convertChainEventTransactionsToChainEvents(
+      targetErc20Transfers,
+    );
+  }
+
+  public async createChainEventsFromTransactionHashes(
+    transactionHashes: string[],
+    recipientAddress: string,
+  ) {
+    const chainEvents = await this.getChainEventsFromTransactionHashes(
+      transactionHashes,
+      recipientAddress,
+    );
+
+    await this.chainEventService.createMany(chainEvents);
+
+    return chainEvents;
+  }
+
+  public async adjustTransactionValue(
+    targetTransactionHash: string,
+    adjustmentQuantity: Decimal,
+  ) {
+    const targetChainEvent = await this.chainEventService.findByTransactionHash(
+      targetTransactionHash,
+    );
+
+    if (!targetChainEvent) {
+      this.logger.error(
+        `Unable to find target chain event for transaction hash ${targetTransactionHash}`,
+      );
+
+      throw new InternalServerErrorException(
+        `Unable to find target chain event for transaction hash ${targetTransactionHash}`,
+      );
+    }
+
+    const totalAdjustmentQuantity = new Decimal(
+      targetChainEvent.valueAdjustment ?? 0,
+    ).plus(adjustmentQuantity);
+
+    const currentValue = new Decimal(targetChainEvent.value);
+
+    if (currentValue.plus(totalAdjustmentQuantity).lt(0)) {
+      this.logger.error(
+        `Total adjustment quantity for transaction hash ${targetTransactionHash} is greater than the current value`,
+      );
+
+      throw new InternalServerErrorException(
+        `Total adjustment quantity for transaction hash ${targetTransactionHash} is greater than the current value`,
+      );
+    }
+
+    return this.chainEventService.adjustChainEventValue(
+      targetChainEvent.id,
+      totalAdjustmentQuantity,
     );
   }
 }

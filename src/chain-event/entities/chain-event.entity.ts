@@ -52,17 +52,8 @@ export class ChainEvent implements ChainEventDB {
   @Column({ type: 'text', nullable: false })
   value: string;
 
-  @Column({
-    type: 'decimal',
-    precision: 20,
-    scale: 8,
-    nullable: false,
-    default: 0,
-  })
-  valueAdjustment: number;
-
-  @Column({ type: 'jsonb', nullable: false, default: [] })
-  valueAdjustmentTransactionHashes: string[];
+  @Column({ type: 'text', nullable: false, default: '0' })
+  valueAdjustment: string;
 
   @Column({ type: 'varchar', length: 100, nullable: false })
   tokenName: string;
@@ -103,7 +94,7 @@ export class ChainEvent implements ChainEventDB {
 
   get quantity(): Decimal {
     return new Decimal(this.value)
-      .mul(new Decimal(10).pow(this.tokenDecimal))
-      .minus(this.valueAdjustment);
+      .add(this.valueAdjustment)
+      .div(new Decimal(10).pow(this.tokenDecimal));
   }
 }

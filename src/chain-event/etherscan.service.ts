@@ -13,9 +13,21 @@ interface EtherscanRequest {
   sort: 'asc' | 'desc';
 }
 
+interface EtherscanProxyRequest {
+  module: 'proxy';
+  action: 'eth_getTransactionByHash';
+  txhash: string;
+}
+
 interface EtherscanResponse<T> {
   status: '1' | '0';
   message: string;
+  result: T;
+}
+
+interface ProxyResponse<T> {
+  jsonrpc: string;
+  id: number;
   result: T;
 }
 
@@ -56,6 +68,16 @@ export class EtherscanService {
     return result.data;
   }
 
+  async sendProxyRequest<T>(
+    requestParams: EtherscanProxyRequest,
+  ): Promise<ProxyResponse<T>> {
+    const result = await this.client.get<ProxyResponse<T>>('', {
+      params: requestParams,
+    });
+
+    return result.data;
+  }
+
   public async getErc20Transfers(
     address: string,
     startBlock: number,
@@ -74,5 +96,19 @@ export class EtherscanService {
     }
 
     return this.sendRequest<ChainEventTransaction[]>(requestParams);
+  }
+
+  public async getTransaction(transactionHash: string) {
+    const requestParams: EtherscanProxyRequest = {
+      module: 'proxy',
+      action: 'eth_getTransactionByHash',
+      txhash: transactionHash,
+    };
+
+    const transaction = await this.sendProxyRequest<{ blockNumber: string }>(
+      requestParams,
+    );
+
+    return transaction;
   }
 }

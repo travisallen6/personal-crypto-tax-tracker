@@ -4,12 +4,14 @@ import { z } from 'zod';
 const EthereumAddressSchema = z
   .string()
   .length(42)
-  .regex(/^0x[a-fA-F0-9]{40}$/);
+  .regex(/^0x[a-fA-F0-9]{40}$/)
+  .transform((value) => value.toLowerCase());
 
 const EthereumTransactionHashSchema = z
   .string()
   .length(66)
-  .regex(/^0x[a-fA-F0-9]{64}$/);
+  .regex(/^0x[a-fA-F0-9]{64}$/)
+  .transform((value) => value.toLowerCase());
 
 const StringifiedNumberSchema = z.string().regex(/^[0-9]+$/);
 

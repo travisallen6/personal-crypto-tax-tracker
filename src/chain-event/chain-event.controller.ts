@@ -6,11 +6,13 @@ import {
   Patch,
   Param,
   Delete,
+  Put,
 } from '@nestjs/common';
 import { ChainEventService } from './chain-event.service';
 import { CreateChainEventDto } from './dto/create-chain-event.dto';
 import { UpdateChainEventDto } from './dto/update-chain-event.dto';
 import { ChainEventSyncService } from './chain-event-sync.service';
+import Decimal from 'decimal.js';
 
 @Controller('chain-event')
 export class ChainEventController {
@@ -47,8 +49,37 @@ export class ChainEventController {
     return this.chainEventService.remove(+id);
   }
 
+  @Post('bulk')
+  bulkCreate(
+    @Body('transactionHashes') transactionHashes: string[],
+    @Body('recipientAddress') recipientAddress: string,
+  ) {
+    return this.chainEventSyncService.createChainEventsFromTransactionHashes(
+      transactionHashes,
+      recipientAddress,
+    );
+  }
+
+  @Put('adjust/:id')
+  async adjust(
+    @Param('id') id: string,
+    @Body('adjustmentQuantity') adjustmentQuantity: string,
+  ) {
+    const result = await this.chainEventSyncService.adjustTransactionValue(
+      id,
+      new Decimal(adjustmentQuantity),
+    );
+
+    return result;
+  }
+
   @Post('sync')
   syncChainEvents(@Body('address') address: string) {
     return this.chainEventSyncService.syncChainEvents(address);
+  }
+
+  @Post('sync/prices')
+  syncChainEventsWithCryptoPrices() {
+    return this.chainEventSyncService.syncChainEventsWithCryptoPrices();
   }
 }
