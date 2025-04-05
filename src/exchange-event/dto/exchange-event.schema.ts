@@ -12,10 +12,11 @@ const OptionalStringSchema = z.string().max(100).optional();
 const OptionalStringArraySchema = z.array(z.string()).optional();
 
 // Main schema for use with database entities (includes ID)
-export const ExchangeEventDBSchema = z.object({
-  id: z.number().int().positive(),
+export const ExchangeEventSchema = z.object({
   txid: TransactionIdSchema,
   pair: z.string().max(20),
+  baseCurrency: z.string().max(20),
+  quoteCurrency: z.string().max(20),
   time: z.date(),
   type: z.enum(['buy', 'sell']),
   ordertype: z.string().max(20),
@@ -43,7 +44,9 @@ export const ExchangeEventDBSchema = z.object({
 });
 
 // Schema without ID for creating new records
-export const ExchangeEventSchema = ExchangeEventDBSchema.omit({ id: true });
+export const ExchangeEventDBSchema = ExchangeEventSchema.extend({
+  id: z.number().int().positive(),
+});
 
 // Schema for paginated response
 export const PaginatedExchangeResponseSchema = z.object({

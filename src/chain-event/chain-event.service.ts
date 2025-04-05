@@ -1,18 +1,21 @@
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, MoreThan, Repository } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { CreateChainEventDto } from './dto/create-chain-event.dto';
 import { UpdateChainEventDto } from './dto/update-chain-event.dto';
 import { ChainEvent } from './entities/chain-event.entity';
 import { ChainEventSchema } from './dto/chain-event.schema';
-import { ChainEventIdWithCryptoPriceId } from './types/chain-event';
+import {
+  ChainEventDB,
+  ChainEventIdWithCryptoPriceId,
+} from './types/chain-event';
 import { ConfigService } from '@nestjs/config';
 import { ChainEventConfig } from '../config/config';
-import { addDays, subYears } from 'date-fns';
+import Decimal from 'decimal.js';
+
 @Injectable()
 export class ChainEventService {
   private earliestBlockNumber: number;
-
   constructor(
     @InjectRepository(ChainEvent)
     private chainEventRepository: Repository<ChainEvent>,
@@ -24,10 +27,10 @@ export class ChainEventService {
     this.earliestBlockNumber = ChainEventConfig.earliestBlockNumber;
   }
 
-  validateChainEvents(createChainEventDtos: CreateChainEventDto[]) {
-    createChainEventDtos.forEach((createChainEventDto) => {
-      ChainEventSchema.parse(createChainEventDto);
-    });
+  private parseChainEvents(createChainEventDtos: CreateChainEventDto[]) {
+    return createChainEventDtos.map((createChainEventDto) =>
+      ChainEventSchema.parse(createChainEventDto),
+    );
   }
 
   async create(createChainEventDto: CreateChainEventDto) {
@@ -35,13 +38,13 @@ export class ChainEventService {
   }
 
   createMany(createChainEventDtos: CreateChainEventDto[]) {
-    this.validateChainEvents(createChainEventDtos);
+    const parsedChainEventDtos = this.parseChainEvents(createChainEventDtos);
 
     return this.chainEventRepository.manager
       .createQueryBuilder()
       .insert()
       .into(ChainEvent)
-      .values(createChainEventDtos)
+      .values(parsedChainEventDtos)
       .orIgnore()
       .execute();
   }
@@ -62,6 +65,12 @@ export class ChainEventService {
     return this.chainEventRepository.delete(id);
   }
 
+  findByTransactionHash(transactionHash: string) {
+    return this.chainEventRepository.findOne({
+      where: { transactionHash },
+    });
+  }
+
   async findLatestChainEventBlockNumber(): Promise<number> {
     const chainEvent = await this.chainEventRepository.findOne({
       where: {},
@@ -72,7 +81,6 @@ export class ChainEventService {
   }
 
   async findChainEventsMissingCryptoPrice(): Promise<ChainEvent[]> {
-    const oneYearAgo = addDays(subYears(new Date(), 1), 1);
     return this.chainEventRepository.find({
       select: {
         id: true,
@@ -84,7 +92,6 @@ export class ChainEventService {
       },
       where: {
         cryptoPrice: IsNull(),
-        timeStamp: MoreThan(oneYearAgo),
       },
     });
   }
@@ -106,6 +113,122 @@ export class ChainEventService {
       );
 
       return Promise.all(promises);
+    });
+  }
+
+  private async getDisposalChainEventsWithCostBasis(
+    userAddresses: string[],
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ChainEventDB[]> {
+    const chainEvents = await this.chainEventRepository.find({
+      where: {
+        from: In(userAddresses),
+      },
+      relations: [
+        'disposalCostBasis',
+        'disposalCostBasis.acquisitionChainEvent',
+        'disposalCostBasis.acquisitionExchangeEvent',
+      ],
+      order: {
+        timeStamp: sortOrder,
+      },
+    });
+
+    return chainEvents;
+  }
+
+  private async getAcquisitionChainEventsWithCostBasis(
+    userAddresses: string[],
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ChainEventDB[]> {
+    const chainEvents = await this.chainEventRepository.find({
+      where: {
+        to: In(userAddresses),
+      },
+      relations: [
+        'acquisitionCostBasis',
+        'acquisitionCostBasis.disposalExchangeEvent',
+        'acquisitionCostBasis.disposalChainEvent',
+      ],
+      order: {
+        timeStamp: sortOrder,
+      },
+    });
+
+    return chainEvents;
+  }
+
+  public async getLinkedDisposalChainEvents(
+    userAddresses: string[],
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ChainEventDB[]> {
+    const disposalChainEvents = await this.getDisposalChainEventsWithCostBasis(
+      userAddresses,
+      sortOrder,
+    );
+
+    return disposalChainEvents.filter(
+      (event) => (event.disposalCostBasis?.length ?? 0) > 0,
+    );
+  }
+
+  public async getUnlinkedDisposalChainEvents(
+    userAddresses: string[],
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ChainEventDB[]> {
+    const disposalChainEvents = await this.getDisposalChainEventsWithCostBasis(
+      userAddresses,
+      sortOrder,
+    );
+
+    return disposalChainEvents.filter(
+      (event) => (event.disposalCostBasis?.length ?? 0) === 0,
+    );
+  }
+
+  public async getLinkedAcquisitionChainEvents(
+    userAddresses: string[],
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ChainEventDB[]> {
+    const acquisitionChainEvents =
+      await this.getAcquisitionChainEventsWithCostBasis(
+        userAddresses,
+        sortOrder,
+      );
+
+    return acquisitionChainEvents.filter(
+      (event) => (event.acquisitionCostBasis?.length ?? 0) > 0,
+    );
+  }
+
+  public async getUnlinkedAcquisitionChainEvents(
+    userAddresses: string[],
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<ChainEventDB[]> {
+    const acquisitionChainEvents =
+      await this.getAcquisitionChainEventsWithCostBasis(
+        userAddresses,
+        sortOrder,
+      );
+
+    return acquisitionChainEvents.filter(
+      (event) => (event.acquisitionCostBasis?.length ?? 0) === 0,
+    );
+  }
+
+  public async adjustChainEventValue(
+    chainEventId: number,
+    adjustmentValue: Decimal,
+  ) {
+    await this.chainEventRepository.update(
+      { id: chainEventId },
+      {
+        valueAdjustment: adjustmentValue.toString(),
+      },
+    );
+
+    return this.chainEventRepository.findOne({
+      where: { id: chainEventId },
     });
   }
 }

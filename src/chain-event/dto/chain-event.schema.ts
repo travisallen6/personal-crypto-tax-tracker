@@ -1,19 +1,21 @@
+import { Decimal } from 'decimal.js';
 import { z } from 'zod';
 
 const EthereumAddressSchema = z
   .string()
   .length(42)
-  .regex(/^0x[a-fA-F0-9]{40}$/);
+  .regex(/^0x[a-fA-F0-9]{40}$/)
+  .transform((value) => value.toLowerCase());
 
 const EthereumTransactionHashSchema = z
   .string()
   .length(66)
-  .regex(/^0x[a-fA-F0-9]{64}$/);
+  .regex(/^0x[a-fA-F0-9]{64}$/)
+  .transform((value) => value.toLowerCase());
 
 const StringifiedNumberSchema = z.string().regex(/^[0-9]+$/);
 
-export const ChainEventDBSchema = z.object({
-  id: z.number().int().positive(),
+export const ChainEventSchema = z.object({
   blockNumber: z.number().int().positive(),
   timeStamp: z.date(),
   transactionHash: EthereumTransactionHashSchema,
@@ -35,4 +37,7 @@ export const ChainEventDBSchema = z.object({
   cryptoPriceId: z.number().int().positive().optional(),
 });
 
-export const ChainEventSchema = ChainEventDBSchema.omit({ id: true });
+export const ChainEventDBSchema = ChainEventSchema.extend({
+  id: z.number().int().positive(),
+  quantity: z.instanceof(Decimal),
+});

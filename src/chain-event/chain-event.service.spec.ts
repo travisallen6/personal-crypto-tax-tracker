@@ -4,6 +4,7 @@ import { ChainEventService } from './chain-event.service';
 import { ChainEvent } from './entities/chain-event.entity';
 import { CreateChainEventDto } from './dto/create-chain-event.dto';
 import { UpdateChainEventDto } from './dto/update-chain-event.dto';
+import { ConfigService } from '@nestjs/config';
 
 type QueryBuilderMock = {
   insert: jest.MockedFunction<() => QueryBuilderMock>;
@@ -43,6 +44,18 @@ const createMockRepository = (): MockRepository => ({
   },
 });
 
+const EARLIEST_BLOCK_NUMBER = 18908895;
+// Mock ConfigService
+const mockConfigService = {
+  get: jest.fn(),
+  getOrThrow: jest.fn((key) => {
+    if (key === 'chainEvent') {
+      return { earliestBlockNumber: EARLIEST_BLOCK_NUMBER };
+    }
+    return {};
+  }),
+};
+
 describe('ChainEventService', () => {
   let service: ChainEventService;
   let repository: MockRepository;
@@ -55,6 +68,10 @@ describe('ChainEventService', () => {
         {
           provide: getRepositoryToken(ChainEvent),
           useValue: repository,
+        },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
         },
       ],
     }).compile();
@@ -289,7 +306,7 @@ describe('ChainEventService', () => {
         where: {},
         order: { blockNumber: 'DESC' },
       });
-      expect(result).toBe(0);
+      expect(result).toBe(EARLIEST_BLOCK_NUMBER);
     });
   });
 });

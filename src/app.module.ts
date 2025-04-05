@@ -11,6 +11,8 @@ import { ZodValidationPipe } from 'nestjs-zod';
 import { ExchangeEvent } from './exchange-event/entities/exchange-event.entity';
 import { CryptoPrice } from './crypto-price/entities/crypto-price.entity';
 import { CryptoPriceModule } from './crypto-price/crypto-price.module';
+import { CostBasisModule } from './cost-basis/cost-basis.module';
+import { CostBasis } from './cost-basis/entities/cost-basis.entity';
 
 @Module({
   imports: [
@@ -22,6 +24,7 @@ import { CryptoPriceModule } from './crypto-price/crypto-price.module';
     ChainEventModule,
     ExchangeEventModule,
     CryptoPriceModule,
+    CostBasisModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -34,7 +37,7 @@ import { CryptoPriceModule } from './crypto-price/crypto-price.module';
           username: dbConfig.username,
           password: dbConfig.password,
           database: dbConfig.name,
-          entities: [ChainEvent, ExchangeEvent, CryptoPrice],
+          entities: [ChainEvent, ExchangeEvent, CryptoPrice, CostBasis],
           synchronize: dbConfig.autoSync,
           timezone: 'Z',
         };

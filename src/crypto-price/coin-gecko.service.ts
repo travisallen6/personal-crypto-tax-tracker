@@ -4,6 +4,7 @@ import { getUnixTimestamp } from '../utils/date';
 import { ConfigService } from '@nestjs/config';
 import { CoinGeckoConfig } from '../config/config';
 import difficultPrices from '../data/difficult-prices';
+import { subDays, subYears } from 'date-fns';
 export interface CoinGeckoMarketHistoryResponse {
   prices: [number, number][]; // [timestamp, price]
   market_caps: [number, number][];
@@ -79,7 +80,13 @@ export class CoinGeckoService {
       if (existingDifficultPrice) {
         return existingDifficultPrice;
       }
-
+      const oneYearAgo = subDays(subYears(new Date(), 1), 1);
+      if (timestamp < oneYearAgo) {
+        this.logger.warn(
+          `Timestamp ${timestamp.toISOString()} is before ${oneYearAgo.toISOString()}`,
+        );
+        return null;
+      }
       const coinId = this.getCoinIdFromSymbol(symbol);
       if (!coinId) {
         this.logger.warn(`No coin ID mapping found for symbol: ${symbol}`);

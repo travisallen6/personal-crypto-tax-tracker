@@ -5,9 +5,14 @@ import {
   Index,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { ChainEventDB } from '../types/chain-event';
 import { CryptoPrice } from '../../crypto-price/entities/crypto-price.entity';
+import { CostBasis } from '../../cost-basis/entities/cost-basis.entity';
+import { CostBasisDB } from '../../cost-basis/types/cost-basis';
+import { Decimal } from 'decimal.js';
+
 @Entity()
 @Index(
   'chain_event_unique_id',
@@ -47,6 +52,9 @@ export class ChainEvent implements ChainEventDB {
   @Column({ type: 'text', nullable: false })
   value: string;
 
+  @Column({ type: 'text', nullable: false, default: '0' })
+  valueAdjustment: string;
+
   @Column({ type: 'varchar', length: 100, nullable: false })
   tokenName: string;
 
@@ -77,4 +85,16 @@ export class ChainEvent implements ChainEventDB {
   @ManyToOne(() => CryptoPrice, (cryptoPrice) => cryptoPrice.id)
   @JoinColumn({ name: 'cryptoPriceId' })
   cryptoPrice: CryptoPrice;
+
+  @OneToMany(() => CostBasis, (costBasis) => costBasis.acquisitionChainEvent)
+  acquisitionCostBasis: CostBasisDB[];
+
+  @OneToMany(() => CostBasis, (costBasis) => costBasis.disposalChainEvent)
+  disposalCostBasis: CostBasisDB[];
+
+  get quantity(): Decimal {
+    return new Decimal(this.value)
+      .add(this.valueAdjustment)
+      .div(new Decimal(10).pow(this.tokenDecimal));
+  }
 }

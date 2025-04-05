@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { ExchangeEventService } from './exchange-event.service';
 import { KrakenService } from './kraken.service';
+import { ExchangeEvent } from './types/exchange-event';
+import { KrakenLedgerEntry } from './types/kraken-api-responses';
+import Decimal from 'decimal.js';
 import { getUnixTimestamp } from '../utils/date';
-import {
-  ExchangeEvent,
-  PaginatedExchangeResponse,
-} from './types/exchange-event';
+
+interface KrakenLedgerEntryWithLedgerId extends KrakenLedgerEntry {
+  ledgerId: string;
+}
+
 @Injectable()
 export class ExchangeEventSyncService {
   constructor(
@@ -19,32 +23,118 @@ export class ExchangeEventSyncService {
    * @param totalResultsCount - The total results count.
    * @param results - The results from the current page.
    */
-  private getNextOffset({
-    currentOffset,
-    totalResultsCount,
-    results,
-  }: PaginatedExchangeResponse<ExchangeEvent[]>): {
+  // {
+  //   currentOffset,
+  //   totalResultsCount,
+  //   results,
+  // }: PaginatedExchangeResponse<ExchangeEvent[]>
+  private getNextOffset(
+    currentOffset: number,
+    totalResultsCount: number,
+    resultLength: number,
+  ): {
     shouldContinueSyncing: boolean;
     offset?: number;
   } {
-    if (currentOffset + results.length >= totalResultsCount) {
+    if (currentOffset + resultLength >= totalResultsCount) {
       return { shouldContinueSyncing: false };
     }
 
     return {
       shouldContinueSyncing: true,
-      offset: currentOffset + results.length,
+      offset: currentOffset + resultLength,
     };
   }
 
-  /**
-   * Syncs exchange events from Kraken to the database.
-   * @param start - The start timestamp for the sync.
-   * @param end - The end timestamp for the sync.
-   * @param offset - The offset for the sync. Primarily used in the recursive call
-   */
+  private convertTradeLedgersToExchangeEvents(
+    tradeLedgers: Array<{
+      tradeId: string;
+      ledgers: KrakenLedgerEntryWithLedgerId[];
+    }>,
+  ): ExchangeEvent[] {
+    return tradeLedgers.map(({ tradeId, ledgers }) => {
+      const baseCurrency = ledgers.find((ledger) =>
+        ledger.amount.startsWith('-'),
+      );
 
-  async syncExchangeEvents(start?: number, offset = 0) {
+      const quoteCurrency = ledgers.find(
+        (ledger) => !ledger.amount.startsWith('-'),
+      );
+
+      if (!baseCurrency || !quoteCurrency) {
+        throw new Error('Base or quote currency not found');
+      }
+
+      const baseCurrencyAsset = baseCurrency.asset;
+      const quoteCurrencyAsset = quoteCurrency.asset;
+
+      const baseCurrencyAmount = new Decimal(baseCurrency.amount);
+      const quoteCurrencyAmount = new Decimal(quoteCurrency.amount);
+
+      const type = baseCurrencyAsset === 'ZUSD' ? 'buy' : 'sell';
+
+      const price = quoteCurrencyAmount.div(baseCurrencyAmount.abs());
+      const cost =
+        type === 'buy' ? baseCurrencyAmount.abs() : quoteCurrencyAmount.abs();
+      const vol = cost.div(price);
+
+      const baseFee = new Decimal(baseCurrency.fee);
+      const quoteFee = new Decimal(quoteCurrency.fee);
+
+      const earliestTimestamp = new Date(
+        Math.min(baseCurrency.time * 1000, quoteCurrency.time * 1000),
+      );
+
+      return {
+        baseCurrency: baseCurrencyAsset,
+        quoteCurrency: quoteCurrencyAsset,
+        txid: tradeId,
+        pair: `${baseCurrencyAsset}${quoteCurrencyAsset}`,
+        time: earliestTimestamp,
+        type: type,
+        price: price.toNumber(),
+        cost: cost.toNumber(),
+        baseFee: baseFee.toNumber(),
+        quoteFee: quoteFee.toNumber(),
+        vol: vol.toNumber(),
+        ledgers: ledgers.map((ledger) => ledger.ledgerId),
+        withdrawalFee: 0,
+      };
+    });
+  }
+
+  private groupLedgersByRefId(
+    ledgers: KrakenLedgerEntryWithLedgerId[],
+    targetLedgerType: 'trade' | 'deposit' | 'withdrawal',
+  ): Array<{ tradeId: string; ledgers: KrakenLedgerEntryWithLedgerId[] }> {
+    const groupedLedgers = ledgers.reduce(
+      (acc, ledger) => {
+        if (ledger.type !== targetLedgerType) {
+          return acc;
+        }
+
+        if (!acc[ledger.refid]) {
+          acc[ledger.refid] = [];
+        }
+
+        acc[ledger.refid].push(ledger);
+
+        return acc;
+      },
+      {} as Record<string, KrakenLedgerEntryWithLedgerId[]>,
+    );
+
+    return Object.entries(groupedLedgers).map(([tradeId, ledgers]) => ({
+      tradeId,
+      ledgers,
+    }));
+  }
+
+  async syncLedgers(
+    start?: number,
+    offset = 0,
+    accumulatedLedger: Record<string, KrakenLedgerEntry> = {},
+  ) {
     const startTimestamp =
       start ??
       (await this.exchangeEventService.findLatestExchangeEventTimestamp());
@@ -52,19 +142,39 @@ export class ExchangeEventSyncService {
     // Allow the end time to continue advancing as we fetch more data
     const endTimestamp = getUnixTimestamp();
 
-    const krakenEvents = await this.krakenService.getClosedTrades(
+    const krakenLedgers = await this.krakenService.getLedgers(
       startTimestamp,
       endTimestamp,
       offset,
     );
 
-    await this.exchangeEventService.createMany(krakenEvents.results);
-
-    const { shouldContinueSyncing, offset: nextOffset } =
-      this.getNextOffset(krakenEvents);
-
+    const { shouldContinueSyncing, offset: nextOffset } = this.getNextOffset(
+      offset,
+      krakenLedgers.count,
+      Object.keys(krakenLedgers.ledger).length,
+    );
+    const updatedAccumulatedLedger = {
+      ...accumulatedLedger,
+      ...krakenLedgers.ledger,
+    };
     if (shouldContinueSyncing) {
-      await this.syncExchangeEvents(startTimestamp, nextOffset);
+      await this.syncLedgers(
+        startTimestamp,
+        nextOffset,
+        updatedAccumulatedLedger,
+      );
+    } else {
+      const tradeLedgers = this.groupLedgersByRefId(
+        Object.entries(updatedAccumulatedLedger).map(([ledgerId, ledger]) => ({
+          ...ledger,
+          ledgerId,
+        })),
+        'trade',
+      );
+      const exchangeEvents =
+        this.convertTradeLedgersToExchangeEvents(tradeLedgers);
+
+      await this.exchangeEventService.createMany(exchangeEvents);
     }
   }
 }

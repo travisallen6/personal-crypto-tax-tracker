@@ -12,6 +12,6 @@ import { ExchangeEventController } from './exchange-event.controller';
   imports: [ConfigModule, TypeOrmModule.forFeature([ExchangeEvent])],
   controllers: [ExchangeController, ExchangeEventController],
   providers: [KrakenService, ExchangeEventService, ExchangeEventSyncService],
-  exports: [],
+  exports: [ExchangeEventService],
 })
 export class ExchangeEventModule {}
