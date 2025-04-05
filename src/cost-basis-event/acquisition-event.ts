@@ -8,6 +8,9 @@ export class AcquisitionEvent {
   public quantity: Decimal;
   public currency: string;
   private protectedAvailableCostBasisQuantity: Decimal;
+  private baseFee: Decimal;
+  private quoteFee: Decimal;
+  private withdrawalFee: Decimal;
   public timestamp: Date;
 
   constructor(private event: ChainEventDB | ExchangeEventDB) {
@@ -49,6 +52,9 @@ export class AcquisitionEvent {
     this.event = event;
     this.quantity = event.quantity;
     this.currency = event.tokenSymbol;
+    this.baseFee = new Decimal(0);
+    this.quoteFee = new Decimal(0);
+    this.withdrawalFee = new Decimal(0);
     this.timestamp = event.timeStamp;
     this.protectedAvailableCostBasisQuantity =
       this.getAvailableCostBasisQuantity();
@@ -58,7 +64,10 @@ export class AcquisitionEvent {
     this.id = event.id;
     this.event = event;
     this.quantity = new Decimal(event.vol);
-    this.currency = event.baseCurrency;
+    this.currency = event.quoteCurrency;
+    this.baseFee = new Decimal(event.baseFee);
+    this.quoteFee = new Decimal(event.quoteFee);
+    this.withdrawalFee = new Decimal(event.withdrawalFee);
     this.timestamp = event.time;
     this.protectedAvailableCostBasisQuantity =
       this.getAvailableCostBasisQuantity();
@@ -67,7 +76,7 @@ export class AcquisitionEvent {
   private getAvailableCostBasisQuantity() {
     return (this.event.disposalCostBasis || []).reduce((acc, curr) => {
       return acc.plus(curr.quantity);
-    }, this.quantity);
+    }, this.quantity.minus(this.quoteFee).minus(this.withdrawalFee));
   }
 
   public spendAvailableCostBasisQuantity(quantity: Decimal) {
