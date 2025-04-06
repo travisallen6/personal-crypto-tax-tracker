@@ -29,6 +29,16 @@ export class CostBasisController {
     return this.costBasisService.findAll();
   }
 
+  @Post('validate')
+  async validateCostBasis() {
+    const errors =
+      await this.costBasisSyncService.validateLinkedAcquisitionEvents();
+    return {
+      success: errors.length === 0,
+      errors,
+    };
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const costBasis = await this.costBasisService.findOne(+id);

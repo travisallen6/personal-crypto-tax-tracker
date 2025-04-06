@@ -4,6 +4,8 @@ import { DisposalEventService } from '../cost-basis-event/disposal-event.service
 import { AcquisitionEventService } from '../cost-basis-event/acquisition-event.service';
 import { AcquisitionEvent } from '../cost-basis-event/acquisition-event';
 import { CreateCostBasisDto } from './dto/create-cost-basis.dto';
+import Decimal from 'decimal.js';
+import { CostBasis } from './entities/cost-basis.entity';
 
 @Injectable()
 export class CostBasisSyncService {
@@ -135,5 +137,98 @@ export class CostBasisSyncService {
     this.logger.log(
       `Created ${costBasisRecordsToCreate.length} cost basis records`,
     );
+  }
+
+  private buildSourceIdToQuantityMap(costBasisRecords: CostBasis[]) {
+    return new Map<string, Decimal>(
+      costBasisRecords.flatMap(({ disposalEvent, acquisitionEvent }) => {
+        const sourceIdQuantitiesToInclude: [string, Decimal][] = [];
+
+        if (disposalEvent) {
+          sourceIdQuantitiesToInclude.push([
+            disposalEvent.sourceId,
+            disposalEvent.quantity,
+          ]);
+        }
+
+        if (acquisitionEvent) {
+          sourceIdQuantitiesToInclude.push([
+            acquisitionEvent.sourceId,
+            acquisitionEvent.quantity,
+          ]);
+        }
+
+        return sourceIdQuantitiesToInclude;
+      }),
+    );
+  }
+
+  public async validateLinkedAcquisitionEvents(): Promise<string[]> {
+    const errors: string[] = [];
+    const costBasisRecords = await this.costBasisService.findAllLinked();
+    const sourceIdToQuantity =
+      this.buildSourceIdToQuantityMap(costBasisRecords);
+
+    for (const {
+      disposalEvent,
+      acquisitionEvent,
+      quantity: costBasisQuantity,
+    } of costBasisRecords) {
+      // is disposal event overspent
+      if (disposalEvent) {
+        const runningDisposalQuantity = sourceIdToQuantity.get(
+          disposalEvent.sourceId,
+        );
+
+        if (runningDisposalQuantity) {
+          sourceIdToQuantity.set(
+            disposalEvent.sourceId,
+            runningDisposalQuantity.minus(costBasisQuantity),
+          );
+        } else {
+          errors.push(
+            `Disposal event ${disposalEvent.id} has no running disposal quantity`,
+          );
+        }
+      }
+      // is acquisition event underspent
+      if (acquisitionEvent) {
+        const runningAcquisitionQuantity = sourceIdToQuantity.get(
+          acquisitionEvent.sourceId,
+        );
+
+        if (runningAcquisitionQuantity) {
+          sourceIdToQuantity.set(
+            acquisitionEvent.sourceId,
+            runningAcquisitionQuantity.minus(costBasisQuantity),
+          );
+        } else {
+          errors.push(
+            `Acquisition event ${acquisitionEvent.id} has no running acquisition quantity`,
+          );
+        }
+      }
+
+      // is disposal event and acquisition event different currencies?
+      if (
+        disposalEvent &&
+        acquisitionEvent &&
+        disposalEvent.currency !== acquisitionEvent.currency
+      ) {
+        errors.push(
+          `Disposal event ${disposalEvent.id} and acquisition event ${acquisitionEvent.id} have different currencies: ${disposalEvent.currency}, ${acquisitionEvent.currency}`,
+        );
+      }
+    }
+
+    for (const [sourceId, quantity] of sourceIdToQuantity.entries()) {
+      if (!quantity.equals(0)) {
+        errors.push(
+          `Cost basis source ID ${sourceId} has an unlinked quantity: ${quantity.toString()}`,
+        );
+      }
+    }
+
+    return errors;
   }
 }

@@ -48,7 +48,7 @@ describe('DisposalEventService', () => {
       linkedChainEvents,
     );
 
-    const result = await service.getLinkedDisposalEvents();
+    const result = await service.getLinkedDisposalEvents([]);
 
     expect(result).toHaveLength(2);
     expect(result.every((e) => e instanceof DisposalEvent)).toBe(true);
@@ -65,7 +65,7 @@ describe('DisposalEventService', () => {
       unlinkedChainEvents,
     );
 
-    const result = await service.getUnlinkedDisposalEvents();
+    const result = await service.getUnlinkedDisposalEvents([]);
 
     expect(result).toHaveLength(3);
     expect(result.every((e) => e instanceof DisposalEvent)).toBe(true);
