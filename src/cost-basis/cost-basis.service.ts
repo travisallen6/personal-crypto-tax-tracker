@@ -61,6 +61,20 @@ export class CostBasisService {
     });
   }
 
+  async findUnclassified(): Promise<CostBasis[]> {
+    return this.costBasisRepository.find({
+      where: [{ taxClassificationType: IsNull() }, { incomeType: IsNull() }],
+      relations: [
+        'acquisitionChainEvent',
+        'acquisitionChainEvent.cryptoPrice',
+        'acquisitionExchangeEvent',
+        'disposalChainEvent',
+        'disposalChainEvent.cryptoPrice',
+        'disposalExchangeEvent',
+      ],
+    });
+  }
+
   async findOne(id: number): Promise<CostBasis | null> {
     return this.costBasisRepository.findOne({
       where: { id },

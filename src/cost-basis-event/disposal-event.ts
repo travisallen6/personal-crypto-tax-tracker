@@ -23,6 +23,8 @@ export class DisposalEvent {
   private protectedUnaccountedCostBasisQuantity: Decimal;
   public timestamp: Date;
   public acquisitionEvents: AcquisitionEvent[];
+  public isIncomeEvent = false;
+  private priceAtEvent: Decimal;
 
   constructor(private event: ChainEventDB | ExchangeEventDB) {
     if (this.isChainEvent(event)) {
@@ -41,6 +43,10 @@ export class DisposalEvent {
     return this.isChainEvent(this.event)
       ? `chain_event:${this.event.id}`
       : `exchange_event:${this.event.id}`;
+  }
+
+  get usdValue(): Decimal {
+    return this.priceAtEvent.mul(this.quantity);
   }
 
   private isChainEvent(
@@ -63,6 +69,9 @@ export class DisposalEvent {
     this.timestamp = event.timeStamp;
     this.baseFee = new Decimal(0);
     this.quoteFee = new Decimal(0);
+    this.priceAtEvent = event.cryptoPrice?.price
+      ? new Decimal(event.cryptoPrice.price)
+      : new Decimal(0);
     this.protectedUnaccountedCostBasisQuantity =
       this.getUnaccountedCostBasisQuantity();
   }
@@ -74,6 +83,7 @@ export class DisposalEvent {
     this.timestamp = event.time;
     this.baseFee = new Decimal(event.baseFee);
     this.quoteFee = new Decimal(event.quoteFee);
+    this.priceAtEvent = new Decimal(event.price);
     this.quantity = new Decimal(event.vol).add(this.baseFee);
     this.protectedUnaccountedCostBasisQuantity =
       this.getUnaccountedCostBasisQuantity();
@@ -128,6 +138,8 @@ export class DisposalEvent {
       acquisitionExchangeEventId: null,
       disposalChainEventId: null,
       disposalExchangeEventId: null,
+      taxClassificationType: null,
+      incomeType: null,
       ...computedCostBasisIds,
     };
   }

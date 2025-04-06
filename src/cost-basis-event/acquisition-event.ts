@@ -14,6 +14,8 @@ export class AcquisitionEvent {
   private withdrawalFee: Decimal;
   public timestamp: Date;
   public disposalEvents: DisposalEvent[];
+  public isIncomeEvent: boolean;
+  private priceAtEvent: Decimal;
 
   constructor(private event: ChainEventDB | ExchangeEventDB) {
     if (this.isChainEvent(event)) {
@@ -56,6 +58,10 @@ export class AcquisitionEvent {
     return this.protectedAvailableCostBasisQuantity.lessThanOrEqualTo(0);
   }
 
+  get usdValue(): Decimal {
+    return this.priceAtEvent.mul(this.quantity);
+  }
+
   private buildFromChainEvent(event: ChainEventDB) {
     this.id = event.id;
     this.event = event;
@@ -64,7 +70,11 @@ export class AcquisitionEvent {
     this.baseFee = new Decimal(0);
     this.quoteFee = new Decimal(0);
     this.withdrawalFee = new Decimal(0);
+    this.priceAtEvent = event.cryptoPrice?.price
+      ? new Decimal(event.cryptoPrice.price)
+      : new Decimal(0);
     this.timestamp = event.timeStamp;
+    this.isIncomeEvent = true;
     this.protectedAvailableCostBasisQuantity =
       this.getAvailableCostBasisQuantity();
   }
@@ -76,10 +86,12 @@ export class AcquisitionEvent {
     this.baseFee = new Decimal(event.baseFee);
     this.quoteFee = new Decimal(event.quoteFee);
     this.withdrawalFee = new Decimal(event.withdrawalFee);
+    this.priceAtEvent = new Decimal(event.price);
     this.quantity = new Decimal(event.vol)
       .minus(this.quoteFee)
       .minus(this.withdrawalFee);
     this.timestamp = event.time;
+    this.isIncomeEvent = false;
     this.protectedAvailableCostBasisQuantity =
       this.getAvailableCostBasisQuantity();
   }
