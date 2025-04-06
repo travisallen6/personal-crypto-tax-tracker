@@ -45,8 +45,8 @@ export class DisposalEvent {
       : `exchange_event:${this.event.id}`;
   }
 
-  get usdValue(): Decimal {
-    return this.priceAtEvent.mul(this.quantity);
+  public getUsdValueForCostBasis(costBasisQuantity: Decimal): Decimal {
+    return this.priceAtEvent.mul(costBasisQuantity);
   }
 
   private isChainEvent(
@@ -138,8 +138,6 @@ export class DisposalEvent {
       acquisitionExchangeEventId: null,
       disposalChainEventId: null,
       disposalExchangeEventId: null,
-      taxClassificationType: null,
-      incomeType: null,
       ...computedCostBasisIds,
     };
   }
