@@ -15,6 +15,8 @@ import { CostBasisModule } from './cost-basis/cost-basis.module';
 import { CostBasis } from './cost-basis/entities/cost-basis.entity';
 import { TaxClassificationModule } from './tax-classification/tax-classification.module';
 import { TaxReportModule } from './tax-report/tax-report.module';
+import { EstimatedTaxModule } from './estimated-tax/estimated-tax.module';
+import { EstimatedTax } from './estimated-tax/entities/estimated-tax.entity';
 
 @Module({
   imports: [
@@ -29,6 +31,7 @@ import { TaxReportModule } from './tax-report/tax-report.module';
     CostBasisModule,
     TaxClassificationModule,
     TaxReportModule,
+    EstimatedTaxModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -41,7 +44,13 @@ import { TaxReportModule } from './tax-report/tax-report.module';
           username: dbConfig.username,
           password: dbConfig.password,
           database: dbConfig.name,
-          entities: [ChainEvent, ExchangeEvent, CryptoPrice, CostBasis],
+          entities: [
+            ChainEvent,
+            ExchangeEvent,
+            CryptoPrice,
+            CostBasis,
+            EstimatedTax,
+          ],
           synchronize: dbConfig.autoSync,
           timezone: 'Z',
         };
