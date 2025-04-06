@@ -54,18 +54,6 @@ export class CostBasisService {
       ],
       relations: [
         'acquisitionChainEvent',
-        'acquisitionExchangeEvent',
-        'disposalChainEvent',
-        'disposalExchangeEvent',
-      ],
-    });
-  }
-
-  async findUnclassified(): Promise<CostBasis[]> {
-    return this.costBasisRepository.find({
-      where: [{ taxClassificationType: IsNull() }, { incomeType: IsNull() }],
-      relations: [
-        'acquisitionChainEvent',
         'acquisitionChainEvent.cryptoPrice',
         'acquisitionExchangeEvent',
         'disposalChainEvent',
@@ -80,8 +68,10 @@ export class CostBasisService {
       where: { id },
       relations: [
         'acquisitionChainEvent',
+        'acquisitionChainEvent.cryptoPrice',
         'acquisitionExchangeEvent',
         'disposalChainEvent',
+        'disposalChainEvent.cryptoPrice',
         'disposalExchangeEvent',
       ],
     });

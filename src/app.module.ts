@@ -14,6 +14,7 @@ import { CryptoPriceModule } from './crypto-price/crypto-price.module';
 import { CostBasisModule } from './cost-basis/cost-basis.module';
 import { CostBasis } from './cost-basis/entities/cost-basis.entity';
 import { TaxClassificationModule } from './tax-classification/tax-classification.module';
+import { TaxReportModule } from './tax-report/tax-report.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { TaxClassificationModule } from './tax-classification/tax-classification
     CryptoPriceModule,
     CostBasisModule,
     TaxClassificationModule,
+    TaxReportModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

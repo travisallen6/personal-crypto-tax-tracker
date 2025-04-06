@@ -58,8 +58,8 @@ export class AcquisitionEvent {
     return this.protectedAvailableCostBasisQuantity.lessThanOrEqualTo(0);
   }
 
-  get usdValue(): Decimal {
-    return this.priceAtEvent.mul(this.quantity);
+  public getUsdValueForCostBasis(costBasisQuantity: Decimal): Decimal {
+    return this.priceAtEvent.mul(costBasisQuantity);
   }
 
   private buildFromChainEvent(event: ChainEventDB) {

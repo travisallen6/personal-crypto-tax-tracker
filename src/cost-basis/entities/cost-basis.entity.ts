@@ -14,8 +14,6 @@ import { ChainEventDB } from '../../chain-event/types/chain-event';
 import { ExchangeEventDB } from '../../exchange-event/types/exchange-event';
 import { DisposalEvent } from '../../cost-basis-event/disposal-event';
 import { AcquisitionEvent } from '../../cost-basis-event/acquisition-event';
-import { TaxClassificationType } from '../../tax-classification/types/tax-classification';
-import { IncomeType } from '../../tax-classification/types/income-type';
 
 export enum CostBasisMethod {
   FIFO = 'fifo', // First In, First Out
@@ -84,20 +82,6 @@ export class CostBasis implements CostBasisDB {
     nullable: false,
   })
   method: CostBasisMethod;
-
-  @Column({
-    type: 'enum',
-    enum: TaxClassificationType,
-    nullable: true,
-  })
-  taxClassificationType: TaxClassificationType | null;
-
-  @Column({
-    type: 'enum',
-    enum: IncomeType,
-    nullable: true,
-  })
-  incomeType: IncomeType | null;
 
   @Column()
   @CreateDateColumn()
