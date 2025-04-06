@@ -12,7 +12,8 @@ import { ExchangeEvent } from '../../exchange-event/entities/exchange-event.enti
 import { CostBasisDB } from '../types/cost-basis';
 import { ChainEventDB } from '../../chain-event/types/chain-event';
 import { ExchangeEventDB } from '../../exchange-event/types/exchange-event';
-
+import { DisposalEvent } from '../../cost-basis-event/disposal-event';
+import { AcquisitionEvent } from '../../cost-basis-event/acquisition-event';
 export enum CostBasisMethod {
   FIFO = 'fifo', // First In, First Out
 }
@@ -86,4 +87,28 @@ export class CostBasis implements CostBasisDB {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  get disposalEvent(): DisposalEvent | null {
+    if (this.disposalExchangeEvent) {
+      return new DisposalEvent(this.disposalExchangeEvent);
+    }
+
+    if (this.disposalChainEvent) {
+      return new DisposalEvent(this.disposalChainEvent);
+    }
+
+    return null;
+  }
+
+  get acquisitionEvent(): AcquisitionEvent | null {
+    if (this.acquisitionExchangeEvent) {
+      return new AcquisitionEvent(this.acquisitionExchangeEvent);
+    }
+
+    if (this.acquisitionChainEvent) {
+      return new AcquisitionEvent(this.acquisitionChainEvent);
+    }
+
+    return null;
+  }
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, IsNull, Repository } from 'typeorm';
 import { CostBasis } from './entities/cost-basis.entity';
 import { CreateCostBasisDto } from './dto/create-cost-basis.dto';
 import { UpdateCostBasisDto } from './dto/update-cost-basis.dto';
@@ -34,6 +34,24 @@ export class CostBasisService {
 
   async findAll(): Promise<CostBasis[]> {
     return this.costBasisRepository.find({
+      where: {},
+      relations: [
+        'acquisitionChainEvent',
+        'acquisitionExchangeEvent',
+        'disposalChainEvent',
+        'disposalExchangeEvent',
+      ],
+    });
+  }
+
+  async findAllLinked(): Promise<CostBasis[]> {
+    return this.costBasisRepository.find({
+      where: [
+        { acquisitionChainEventId: Not(IsNull()) },
+        { disposalChainEventId: Not(IsNull()) },
+        { acquisitionExchangeEventId: Not(IsNull()) },
+        { disposalExchangeEventId: Not(IsNull()) },
+      ],
       relations: [
         'acquisitionChainEvent',
         'acquisitionExchangeEvent',

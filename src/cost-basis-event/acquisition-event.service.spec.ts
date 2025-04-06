@@ -48,7 +48,7 @@ describe('AcquisitionEventService', () => {
       mockLinkedChainEvents,
     );
 
-    const result = await service.getLinkedAcquisitionEvents();
+    const result = await service.getLinkedAcquisitionEvents([]);
 
     expect(result).toHaveLength(3);
     expect(result.every((e) => e instanceof AcquisitionEvent)).toBe(true);
@@ -65,7 +65,7 @@ describe('AcquisitionEventService', () => {
       mockUnlinkedChainEvents,
     );
 
-    const result = await service.getUnlinkedAcquisitionEvents();
+    const result = await service.getUnlinkedAcquisitionEvents([]);
 
     expect(result).toHaveLength(3);
     expect(result.every((e) => e instanceof AcquisitionEvent)).toBe(true);
